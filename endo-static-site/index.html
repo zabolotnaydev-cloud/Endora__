@@ -1,0 +1,2457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endora · Premium Client Space</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="vendor/chart.umd.js"></script>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<script src="vendor/leaflet.js"></script>
+<style>
+  :root{
+    --bg:#FFFFFF; --surface:#FFFFFF; --ink:#2A1E3F; --muted:#7A6E90; --faint:#A99CC0;
+    --primary:#7E4FC0; --primary-deep:#5B3894; --primary-soft:#9E80D6;
+    --pink:#E79CB0; --pink-deep:#C46A86; --pink-soft:#F6E3E9; --line:#ECE9EE; --wash:#F1EEF3;
+    --neutral-fill:#F5F5F7; --primary-tint:rgba(126,79,192,0.08); --primary-tint-strong:rgba(126,79,192,0.14);
+    --good:#6F9E8C; --warn:#C97B62;
+    --radius:16px; --radius-sm:10px;
+    --shadow:0 8px 28px rgba(91,56,148,0.08); --shadow-sm:0 2px 10px rgba(91,56,148,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh;}
+  ::selection{background:var(--pink-soft);color:var(--primary-deep);}
+  .eyebrow{font-family:'Manrope',sans-serif;font-size:11px;letter-spacing:0.11em;text-transform:uppercase;color:var(--primary-soft);font-weight:500;}
+  h1,h2,h3{font-family:'Manrope',sans-serif;font-weight:500;margin:0;color:var(--ink);}
+  .accent-italic{font-style:italic;color:var(--primary);}
+  a{color:inherit;} button{font-family:'Manrope',sans-serif;cursor:pointer;}
+
+  .sidebar{width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:28px 18px;position:sticky;top:0;height:100vh;}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 8px 24px 8px;}
+  .wordmark{display:flex;align-items:center;gap:14px;}
+  .wordmark-text{font-family:'Jost',sans-serif;font-weight:400;letter-spacing:0.42em;font-size:15px;text-transform:uppercase;color:var(--ink);padding-left:4px;}
+  .wordmark-flower{width:34px;height:34px;flex-shrink:0;}
+  nav.tabs{display:flex;flex-direction:column;gap:2px;margin-top:8px;}
+  .tab-btn{display:flex;align-items:center;gap:12px;padding:11px 12px;border:none;background:transparent;border-radius:var(--radius-sm);color:var(--muted);font-size:14px;font-weight:500;text-align:left;transition:background .15s ease, color .15s ease;}
+  .tab-btn svg{width:18px;height:18px;flex-shrink:0;opacity:.8;}
+  .tab-btn:hover{background:var(--wash);color:var(--ink);}
+  .tab-btn.active{background:var(--primary);color:#fff;}
+  .tab-btn.active svg{opacity:1;}
+  .sidebar-footer{margin-top:auto;padding-top:18px;border-top:1px solid var(--line);}
+  .premium-card{background:linear-gradient(155deg,var(--primary-deep),var(--primary) 70%);border-radius:var(--radius-sm);padding:14px 14px 15px;color:#fff;}
+  .premium-card .eyebrow{color:var(--pink-soft);}
+  .premium-card .clinic{font-size:13px;font-weight:600;margin-top:4px;line-height:1.35;}
+  .premium-card .doctor{font-size:12px;color:#D9CFEA;margin-top:2px;}
+  .freemium-card{background:var(--wash);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;}
+  .freemium-card .eyebrow{color:var(--muted);}
+  .freemium-card p{font-size:12px;color:var(--muted);margin:6px 0 10px;line-height:1.5;}
+  .freemium-card button{width:100%;background:var(--primary);color:#fff;border-radius:999px;padding:9px;font-size:12px;font-weight:700;}
+
+  main{flex:1;min-width:0;padding:36px 44px 80px;max-width:1180px;}
+  .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap;gap:14px;}
+  .page-header h1{font-size:30px;}
+  .page-header .sub{color:var(--muted);font-size:14px;margin-top:6px;}
+  .header-actions{display:flex;gap:10px;}
+  .btn{border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:600;border:1px solid transparent;display:inline-flex;align-items:center;gap:7px;transition:transform .12s ease, box-shadow .12s ease, background .15s ease;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-deep);}
+  .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--primary-soft);color:var(--primary);}
+  .btn:active{transform:scale(0.97);}
+
+  .section{display:none;}
+  .section.active{display:block;animation:fadein .35s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);}
+  .grid{display:grid;gap:20px;}
+
+  /* PROFILE */
+  .profile-hero{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;padding:28px 30px;margin-bottom:22px;}
+  .avatar{width:78px;height:78px;border-radius:50%;background:linear-gradient(135deg,var(--pink-soft),var(--primary-soft));display:flex;align-items:center;justify-content:center;font-family:'Manrope',sans-serif;font-size:26px;color:#fff;font-weight:500;flex-shrink:0;}
+  .profile-name{font-size:24px;}
+  .profile-meta{color:var(--muted);font-size:13.5px;margin-top:5px;}
+  .profile-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .badge{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;background:var(--wash);color:var(--primary-deep);border:1px solid var(--line);}
+  .badge.premium{background:var(--primary-deep);color:#fff;border-color:transparent;}
+  .badge.badge-pink{background:var(--pink-soft);color:var(--pink-deep);border-color:var(--pink);}
+  .stat-block{text-align:right;}
+  .stat-block .num{font-family:'Manrope',sans-serif;font-size:28px;color:var(--primary-deep);}
+  .stat-block .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .profile-grid{grid-template-columns:1.3fr 1fr;}
+  .info-card{padding:22px 24px;}
+  .info-card h3{font-size:15px;margin-bottom:16px;}
+  .info-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+  .info-row:last-child{border-bottom:none;}
+  .info-row .k{color:var(--muted);}
+  .info-row .v{font-weight:600;text-align:right;}
+  .quickstats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px;}
+  .qs-card{padding:18px;text-align:center;}
+  .qs-card .num{font-family:'Manrope',sans-serif;font-size:24px;color:var(--primary-deep);}
+  .qs-card .lbl{font-size:12px;color:var(--muted);margin-top:4px;}
+  .care-team-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .care-team-row:last-child{border-bottom:none;}
+  .ct-avatar{width:38px;height:38px;border-radius:50%;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--pink-deep);flex-shrink:0;}
+  .ct-name{font-size:13.5px;font-weight:600;}
+  .ct-role{font-size:12px;color:var(--muted);}
+
+  /* ANALYSIS */
+  .analysis-top{display:grid;grid-template-columns:230px 1fr;gap:24px;margin-bottom:22px;align-items:start;}
+  .phase-flower-wrap{padding:22px 18px;text-align:center;}
+  .phase-flower-wrap .eyebrow{display:block;margin-bottom:10px;}
+  #phaseFlower{width:150px;height:150px;margin:4px auto 8px;cursor:pointer;}
+  .petal{transition:opacity .2s ease, transform .2s ease;cursor:pointer;}
+  .petal.dim{opacity:0.28;}
+  .petal:hover{opacity:1;transform-box:fill-box;transform-origin:center;transform:scale(1.06);}
+  .phase-label{font-size:12.5px;font-weight:600;margin-top:6px;color:var(--primary-deep);min-height:16px;}
+  .phase-caption{font-size:11px;color:var(--muted);margin-top:2px;}
+  .filters-card{padding:20px 22px;}
+  .filters-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  .chip-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:600;color:var(--muted);}
+  .chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .month-scrub{display:flex;gap:6px;margin-top:16px;}
+  .month-dot{flex:1;text-align:center;padding:9px 4px;border-radius:8px;font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);background:var(--surface);}
+  .month-dot.active{background:var(--wash);color:var(--primary-deep);border-color:var(--primary-soft);}
+  .month-dot .d{display:block;font-size:9.5px;font-weight:500;color:var(--faint);margin-top:1px;}
+  .chart-card{padding:24px 26px;margin-bottom:20px;}
+  .chart-card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+  .chart-card-head h3{font-size:16px;}
+  .legend-note{font-size:11.5px;color:var(--faint);}
+  #trendChart{max-height:340px;}
+  .readout-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .readout-tab{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:600;color:var(--muted);}
+  .readout-tab.active{background:var(--primary-deep);color:#fff;border-color:var(--primary-deep);}
+  #readoutChart{max-height:320px;}
+  .gauge-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .gauge{padding:14px 12px;border:1px solid var(--line);border-radius:12px;text-align:center;}
+  .gauge .gname{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+  .gauge .gbar{height:8px;border-radius:99px;background:var(--wash);overflow:hidden;margin-bottom:8px;}
+  .gauge .gfill{height:100%;background:linear-gradient(90deg,var(--primary-soft),var(--primary));}
+  .gauge .gval{font-family:'Manrope',sans-serif;font-size:18px;color:var(--primary-deep);}
+  .gallery-strip{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 8px;margin-top:4px;}
+  .gallery-item{flex-shrink:0;width:118px;}
+  .gallery-thumb{width:118px;height:88px;border-radius:10px;background:linear-gradient(135deg,#EDE7F5,#F6ECF1);display:flex;align-items:center;justify-content:center;border:1px solid var(--line);position:relative;overflow:hidden;font-size:26px;}
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .gallery-date{font-size:11px;font-weight:600;margin-top:6px;}
+  .gallery-phase{font-size:10.5px;color:var(--muted);}
+  .feedback-card{padding:22px 24px;border-left:4px solid var(--primary);}
+  .feedback-source-ai{color:var(--pink-deep) !important;}
+  .feedback-card .eyebrow{display:block;margin-bottom:2px;}
+  .feedback-source{font-family:'Manrope',sans-serif;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--primary-soft);font-weight:600;margin-top:16px;display:block;}
+  .feedback-source:first-of-type{margin-top:10px;}
+  .feedback-card p{font-size:13.5px;line-height:1.65;color:var(--ink);margin:6px 0 0;}
+  .disclaimer{font-size:11px;color:var(--faint);margin-top:14px;line-height:1.5;}
+
+  /* JOURNAL */
+  .journal-grid{grid-template-columns:1.15fr 0.85fr;align-items:start;}
+  .cal-card{padding:22px;}
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .cal-head h3{font-size:16px;}
+  .cal-nav{display:flex;gap:6px;}
+  .cal-nav button{border:1px solid var(--line);background:var(--surface);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+  table.cal-table{border-collapse:collapse;width:100%;table-layout:fixed;}
+  table.cal-table th{font-size:10.5px;color:var(--faint);font-weight:600;padding-bottom:6px;}
+  table.cal-table td{padding:3px;}
+  .cal-day{aspect-ratio:1;border-radius:9px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--ink);background:var(--surface);width:100%;}
+  .cal-day.blank{border:none;background:transparent;}
+  .cal-day.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft) inset;}
+  .cal-day .dots{display:flex;gap:2px;margin-top:3px;}
+  .cal-day .dot{width:4px;height:4px;border-radius:50%;}
+  .dot-period{background:var(--pink);}
+  .dot-med{background:var(--good);}
+  .dot-pain{background:var(--warn);}
+  .cal-legend{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap;}
+  .cal-legend span{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .cal-legend .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .entry-card{padding:22px;}
+  .entry-date{font-size:13px;color:var(--muted);margin-bottom:2px;}
+  .entry-card h3{font-size:17px;margin-bottom:16px;}
+  .med-list{display:flex;flex-direction:column;gap:9px;margin-bottom:18px;}
+  .med-item{display:flex;align-items:center;gap:10px;font-size:13.5px;}
+  .med-item input{width:16px;height:16px;accent-color:var(--primary);}
+  .med-item label{font-weight:500;}
+  .med-item .dose{color:var(--faint);font-size:12px;margin-left:auto;}
+  label.field-label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;}
+  .field-input{width:100%;border:1.5px solid transparent;border-radius:14px;padding:14px 16px;font-size:15px;font-family:'Manrope',sans-serif;background:var(--wash);color:var(--ink);outline:none;transition:border-color .15s ease, background .15s ease;}
+  .field-input::placeholder{color:var(--faint);}
+  .field-input:focus{border-color:var(--primary-soft);background:#fff;}
+  .pain-scale{display:flex;gap:5px;margin-bottom:18px;}
+  .pain-dot{flex:1;aspect-ratio:1;border-radius:8px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted);}
+  .pain-dot.selected{background:var(--warn);color:#fff;border-color:var(--warn);}
+  .tag-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+  .tag-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted);}
+  .tag-chip.selected{background:var(--pink-soft);color:var(--primary-deep);border-color:var(--pink);}
+  textarea.note-field{width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px;font-family:'Manrope',sans-serif;font-size:13px;resize:vertical;min-height:70px;margin-bottom:14px;background:var(--wash);}
+  .feed-title{font-family:'Manrope',sans-serif;font-size:11px;font-weight:700;margin:26px 0 12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+  .feed-item{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+  .feed-item:last-child{border-bottom:none;}
+  .feed-item .fd{color:var(--faint);}
+  .feed-item .fv{font-weight:600;}
+
+  /* EDUCATION */
+  .glossary-strip{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 6px;margin-bottom:22px;}
+  .glossary-chip{flex-shrink:0;padding:9px 15px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--primary-deep);}
+  .glossary-chip.open{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .glossary-def{display:none;padding:16px 20px;margin:-10px 0 22px;font-size:13px;line-height:1.6;color:var(--muted);}
+  .glossary-def.show{display:block;}
+  .search-bar{display:flex;align-items:center;gap:10px;padding:13px 18px;margin-bottom:26px;}
+  .search-bar svg{width:17px;height:17px;color:var(--faint);flex-shrink:0;}
+  .search-bar input{border:none;outline:none;font-size:14px;width:100%;font-family:'Manrope',sans-serif;background:transparent;}
+  .lesson-group{margin-bottom:30px;}
+  .lesson-group h3{font-size:16px;margin-bottom:14px;}
+  .lesson-list{display:flex;flex-direction:column;gap:10px;}
+  .lesson-card-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .lesson-card{display:flex;align-items:center;gap:16px;padding:16px 18px;transition:background .15s ease;cursor:pointer;}
+  .lesson-card:hover{background:var(--wash);}
+  .lesson-card:after{content:'+';margin-left:8px;color:var(--primary-soft);font-size:16px;font-weight:600;flex-shrink:0;}
+  .lesson-card.open:after{content:'\2212';}
+  .lesson-num{font-family:'Manrope',sans-serif;font-size:18px;color:var(--primary-soft);flex-shrink:0;width:30px;}
+  .lesson-body{flex:1;}
+  .lesson-body .lt{font-size:14px;font-weight:600;}
+  .lesson-body .ld{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .lesson-dur{font-size:11.5px;color:var(--faint);font-family:'Manrope',sans-serif;flex-shrink:0;}
+  .lesson-expand{max-height:0;overflow:hidden;transition:max-height .25s ease, padding .25s ease;font-size:13px;line-height:1.65;color:var(--ink);background:var(--wash);padding:0 20px;}
+  .lesson-expand.show{max-height:220px;padding:16px 20px 18px;border-top:1px solid var(--line);}
+
+  /* COMMUNITY */
+  .cat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px;}
+  .cat-chip{padding:8px 15px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);}
+  .cat-chip.active{background:var(--primary-deep);color:#fff;border-color:var(--primary-deep);}
+  .post-list{display:flex;flex-direction:column;gap:12px;}
+  .post-card{padding:18px 20px;}
+  .post-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .post-author{display:flex;align-items:center;gap:9px;font-size:12.5px;font-weight:600;}
+  .post-avatar{width:26px;height:26px;border-radius:50%;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--pink-deep);font-weight:700;}
+  .post-cat{font-size:10.5px;font-weight:700;color:var(--primary-soft);text-transform:uppercase;letter-spacing:.05em;font-family:'Manrope',sans-serif;}
+  .post-body{font-size:13.5px;line-height:1.6;color:var(--ink);}
+  .post-foot{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--muted);}
+  .like-btn{cursor:pointer;user-select:none;border-radius:999px;padding:2px 9px;transition:background .15s ease;}
+  .like-btn:hover{background:var(--wash);}
+  .like-btn.liked{color:var(--primary-deep);font-weight:600;}
+
+  /* MAP */
+  .city-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .city-search-box{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;box-shadow:var(--shadow-sm);flex-shrink:0;}
+  .city-search-box svg{width:15px;height:15px;color:var(--faint);}
+  .city-search-box input{border:none;outline:none;font-size:13px;font-family:'Manrope',sans-serif;width:150px;background:transparent;}
+  .city-chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .city-chip{padding:8px 15px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);}
+  .city-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .city-search-hint{font-size:11.5px;color:var(--warn);width:100%;}
+  .map-layout{display:grid;grid-template-columns:1fr 320px;gap:0;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow-sm);height:560px;}
+  #clinicMap{width:100%;height:100%;}
+  .clinic-panel{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;}
+  .clinic-search{padding:16px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .clinic-search .search-bar{margin:0;padding:9px 14px;border:1px solid var(--line);border-radius:10px;box-shadow:none;}
+  .clinic-list{overflow-y:auto;padding:10px 12px;flex:1;min-height:0;scrollbar-width:thin;scrollbar-color:var(--primary-soft) transparent;}
+  .clinic-list::-webkit-scrollbar{width:6px;}
+  .clinic-list::-webkit-scrollbar-thumb{background:var(--primary-soft);border-radius:99px;}
+  .clinic-count{padding:8px 16px 0;font-size:11px;color:var(--faint);flex-shrink:0;font-family:'Manrope',sans-serif;}
+  .clinic-card{padding:13px 12px;border-radius:10px;margin-bottom:6px;cursor:pointer;border:1px solid transparent;transition:background .15s ease, transform .15s ease;}
+  .clinic-card:hover{transform:translateX(2px);}
+  .clinic-card:hover, .clinic-card.active{background:var(--wash);border-color:var(--line);}
+  .clinic-thumb{flex-shrink:0;width:52px;height:52px;border-radius:14px;overflow:hidden;line-height:0;background:var(--wash);}
+  .clinic-thumb img{width:52px;height:52px;object-fit:cover;display:block;}
+  .clinic-card .cn{font-size:12.5px;font-weight:700;line-height:1.4;}
+  .clinic-card .cd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.5;}
+  .clinic-card .cm{display:flex;gap:8px;margin-top:7px;flex-wrap:wrap;}
+  .clinic-card .cm span{font-size:10px;font-weight:600;color:var(--primary-deep);background:var(--pink-soft);padding:2px 8px;border-radius:999px;}
+  .clinic-credit{font-size:9.5px;color:var(--faint);margin-top:3px;}
+  .clinic-panel-footer{padding:8px 16px 12px;font-size:10px;color:var(--faint);border-top:1px solid var(--line);flex-shrink:0;}
+
+  .pin-icon{background:transparent;border:none;}
+  .pin-wrap{position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+             opacity:0;animation:pinDrop .5s ease forwards;}
+  @keyframes pinDrop{from{opacity:0;transform:translateY(-14px) scale(.7);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .pin-dot{width:38px;height:38px;border-radius:50%;font-size:16px;background:var(--primary);
+            display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(69,58,107,0.35);
+            border:3px solid #fff;transition:transform .18s ease;cursor:pointer;overflow:hidden;}
+  .pin-dot img{width:100%;height:100%;object-fit:cover;}
+  .pin-wrap:hover .pin-dot{transform:scale(1.15);}
+  .pin-pulse{position:absolute;width:40px;height:40px;border-radius:50%;background:rgba(126,79,192,0.35);
+             animation:pinPulse 2.2s ease-out infinite;}
+  @keyframes pinPulse{0%{transform:scale(0.7);opacity:0.9;}100%{transform:scale(1.9);opacity:0;}}
+
+  @media(max-width:980px){
+    .analysis-top,.journal-grid,.profile-grid{grid-template-columns:1fr;}
+    .map-layout{grid-template-columns:1fr;height:auto;}
+    #clinicMap{height:340px;}
+    .clinic-panel{border-left:none;border-top:1px solid var(--line);}
+    .gauge-row{grid-template-columns:repeat(2,1fr);}
+  }
+
+  .mobile-topbar{display:none;}
+  .drawer-backdrop{display:none;position:fixed;inset:0;background:rgba(42,30,63,0.45);z-index:150;}
+  .drawer-backdrop.show{display:block;}
+  .hamburger-btn{display:none;}
+  .drawer-close{display:none;}
+
+  @media(max-width:760px){
+    body{flex-direction:column;}
+    .mobile-topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--line);
+      position:sticky;top:0;z-index:90;
+    }
+    .mobile-topbar .wordmark{margin:0 auto;}
+    .mobile-topbar .wordmark-text{font-size:13px;letter-spacing:0.36em;}
+    .mobile-topbar .wordmark-flower{width:26px;height:26px;}
+    .hamburger-btn{
+      display:flex;align-items:center;justify-content:center;
+      width:38px;height:38px;border-radius:10px;flex-shrink:0;
+      background:var(--wash);color:var(--ink);position:absolute;left:14px;
+    }
+    .hamburger-btn svg{width:19px;height:19px;}
+
+    .sidebar{
+      position:fixed;left:0;top:0;bottom:0;width:82%;max-width:300px;height:100%;
+      flex-direction:column;padding:20px 18px;
+      border-right:1px solid var(--line);
+      box-shadow:0 0 30px rgba(91,56,148,0.18);z-index:200;
+      transform:translateX(-105%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+      overflow-y:auto;
+    }
+    .sidebar.open{transform:translateX(0);}
+    .brand{display:flex;justify-content:space-between;align-items:center;}
+    .drawer-close{
+      display:flex;align-items:center;justify-content:center;
+      width:32px;height:32px;border-radius:50%;background:var(--wash);color:var(--muted);flex-shrink:0;
+    }
+    nav.tabs{flex-direction:column;margin-top:20px;width:100%;gap:2px;}
+    .tab-btn{flex-direction:row;gap:12px;font-size:14px;padding:11px 12px;text-align:left;border-radius:10px;min-height:44px;justify-content:flex-start;}
+    .tab-btn svg{width:18px;height:18px;}
+    .sidebar-footer{display:block;}
+    main{padding:18px 14px 40px;}
+
+    .page-header{gap:10px;}
+    .page-header h1{font-size:23px;}
+    .page-header .sub{font-size:12.5px;}
+    .header-actions{width:100%;}
+    .header-actions .btn{flex:1;justify-content:center;}
+    .ask-ai-btn{width:100%;justify-content:center;}
+
+    .btn{min-height:44px;}
+    .tag-chip, .chip, .cat-chip, .city-chip, .glossary-chip{min-height:36px;display:inline-flex;align-items:center;}
+
+    .modal-box{max-width:100%;width:100%;margin:0;border-radius:16px 16px 0 0;position:fixed;left:0;right:0;bottom:0;max-height:88vh;}
+    .modal-overlay{align-items:flex-end;padding:0;}
+    .chat-wrap{height:78vh;}
+    .modal-box.chat-modal{max-width:100%;}
+
+    .city-search-box input{width:110px;}
+    .clinic-thumb{width:44px;height:44px;}
+    .gallery-strip{gap:8px;}
+    .gallery-item{width:100px;}
+    .gallery-thumb{width:100px;height:76px;}
+
+    table.cal-table th{font-size:9px;}
+    .cal-day{font-size:10.5px;}
+
+    .quickstats{grid-template-columns:1fr;}
+    .gauge-row{grid-template-columns:1fr 1fr;}
+
+    .profile-hero{grid-template-columns:1fr;text-align:center;padding:24px 20px;gap:6px;}
+    .profile-hero .avatar{margin:0 auto 6px;}
+    .profile-badges{justify-content:center;}
+    .profile-hero .stat-block{text-align:center;margin-top:6px;}
+  }
+  :focus-visible{outline:2px solid var(--primary-soft);outline-offset:2px;}
+
+  .fab-wrap{position:fixed;right:22px;bottom:26px;z-index:120;display:flex;flex-direction:column;align-items:flex-end;gap:12px;}
+  .fab-main{width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;box-shadow:0 10px 26px rgba(126,79,192,0.4);display:flex;align-items:center;justify-content:center;transition:transform .2s ease, background .2s ease;}
+  .fab-main:hover{background:var(--primary-deep);}
+  .fab-main svg{width:24px;height:24px;transition:transform .25s ease;}
+  .fab-wrap.open .fab-main svg{transform:rotate(45deg);}
+  .fab-menu{display:flex;flex-direction:column;gap:8px;align-items:flex-end;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .18s ease, transform .18s ease;}
+  .fab-wrap.open .fab-menu{opacity:1;pointer-events:auto;transform:translateY(0);}
+  .fab-menu-item{display:flex;align-items:center;gap:9px;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:11px 18px 11px 14px;font-size:13px;font-weight:700;box-shadow:0 6px 18px rgba(42,30,63,0.14);white-space:nowrap;}
+  .fab-menu-item:hover{border-color:var(--primary-soft);color:var(--primary-deep);}
+  .fab-menu-icon{font-size:16px;}
+  @media(max-width:760px){
+    .fab-wrap{right:16px;bottom:20px;}
+  }
+
+  .onboard-overlay{position:fixed;inset:0;background:var(--wash);z-index:2000;display:none;align-items:center;justify-content:center;padding:24px;overflow:hidden;}
+  .onboard-overlay.show{display:flex;}
+  .onboard-bg-flower{position:absolute;width:900px;height:900px;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.05;pointer-events:none;}
+  .onboard-card{position:relative;width:100%;max-width:440px;background:#fff;border-radius:24px;box-shadow:0 24px 60px rgba(91,56,148,0.16);padding:36px 34px 30px;max-height:92vh;overflow-y:auto;}
+  .onboard-box{width:100%;}
+  .onboard-logo{display:flex;justify-content:center;margin-bottom:6px;}
+  .onboard-logo-svg{width:72px;height:72px;animation:onboardLogoIn .7s cubic-bezier(.34,1.56,.64,1) both;}
+  @keyframes onboardLogoIn{from{opacity:0;transform:scale(.4) rotate(-25deg);}to{opacity:1;transform:scale(1) rotate(0deg);}}
+  .onboard-progress{display:flex;justify-content:center;gap:6px;margin:14px 0 24px;}
+  .onboard-progress .dot{width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .2s ease, transform .2s ease;}
+  .onboard-progress .dot.done{background:var(--primary-soft);}
+  .onboard-progress .dot.current{background:var(--primary);transform:scale(1.3);}
+  .onboard-step{display:none;}
+  .onboard-step.active{display:block;animation:fadein .35s ease;}
+  .onboard-step h2{font-size:22px;margin-bottom:8px;line-height:1.3;text-align:center;}
+  .onboard-sub{color:var(--muted);font-size:13.5px;line-height:1.55;margin-bottom:22px;text-align:center;}
+  .onboard-choice{width:100%;display:flex;align-items:center;gap:14px;text-align:left;border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:10px;background:#fff;transition:border-color .15s ease, background .15s ease, transform .15s ease;}
+  .onboard-choice:hover{border-color:var(--primary-soft);background:var(--wash);transform:translateY(-1px);}
+  .onboard-choice-icon{width:38px;height:38px;border-radius:50%;background:var(--wash);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .onboard-choice-text{flex:1;}
+  .onboard-choice strong{display:block;font-size:14.5px;margin-bottom:3px;color:var(--ink);}
+  .onboard-choice span{font-size:12.5px;color:var(--muted);}
+  .onboard-clinic-list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .onboard-clinic-card{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;transition:border-color .15s ease, background .15s ease;}
+  .onboard-clinic-card:hover{border-color:var(--primary-soft);}
+  .onboard-clinic-card.selected{border-color:var(--primary);background:var(--wash);}
+  .onboard-clinic-card .cc-icon{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--primary-soft),var(--primary));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+  .onboard-clinic-card .cn{font-size:13px;font-weight:700;}
+  .onboard-clinic-card .ca{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .onboard-step-actions{display:flex;gap:10px;}
+  .onboard-step-actions .btn-ghost{flex:0 0 auto;padding-left:20px;padding-right:20px;}
+  .onboard-step-actions .btn-primary{flex:1;justify-content:center;}
+
+  @media(max-width:480px){
+    .onboard-overlay{padding:0;align-items:flex-end;}
+    .onboard-card{max-width:100%;border-radius:24px 24px 0 0;max-height:94vh;padding:28px 22px calc(24px + env(safe-area-inset-bottom));animation:onboardCardUp .3s ease;}
+    @keyframes onboardCardUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+    .onboard-logo-svg{width:60px;height:60px;}
+  }
+
+  .upsell-banner{display:flex;align-items:center;gap:18px;padding:18px 22px;margin-bottom:20px;background:linear-gradient(135deg,var(--wash),var(--pink-soft));border:1px solid var(--line);}
+  .upsell-text strong{display:block;font-size:14px;color:var(--primary-deep);margin-bottom:3px;}
+  .upsell-text p{font-size:12.5px;color:var(--muted);margin:0;line-height:1.5;}
+  .become-client-section{padding:22px 24px;margin-bottom:20px;}
+  .become-client-list .onboard-clinic-card{background:var(--surface);}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(42,35,56,0.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:#fff;border-radius:18px;max-width:480px;width:100%;max-height:86vh;overflow-y:auto;padding:28px 26px 26px;position:relative;box-shadow:0 20px 60px rgba(42,35,56,0.3);animation:modalIn .2s ease;}
+  @keyframes modalIn{from{opacity:0;transform:translateY(10px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .modal-close{position:absolute;top:14px;right:16px;border:none;background:var(--wash);width:30px;height:30px;border-radius:50%;font-size:18px;color:var(--muted);line-height:1;}
+  .modal-close:hover{color:var(--primary);}
+  .modal-box h3{font-size:19px;margin-bottom:14px;}
+  .modal-box label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin:14px 0 6px;}
+  .modal-box input[type=text], .modal-box textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Manrope',sans-serif;font-size:13.5px;background:var(--wash);}
+
+  .ask-ai-btn{flex-shrink:0;}
+  .ask-ai-btn svg{width:15px;height:15px;}
+
+  .modal-box.chat-modal{max-width:440px;padding:0;overflow:hidden;}
+  .chat-wrap{display:flex;flex-direction:column;height:520px;max-height:80vh;}
+  .chat-header{display:flex;align-items:center;gap:10px;padding:20px 22px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
+  .chat-ai-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary-soft),var(--primary));color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .chat-title{font-size:14px;font-weight:700;}
+  .chat-sub{font-size:11.5px;color:var(--muted);}
+  .chat-messages{flex:1;overflow-y:auto;padding:16px 22px;display:flex;flex-direction:column;gap:10px;}
+  .chat-msg{max-width:82%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;}
+  .chat-msg-ai{align-self:flex-start;background:var(--wash);color:var(--ink);border-bottom-left-radius:4px;}
+  .chat-msg-user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px;}
+  .chat-input-row{display:flex;gap:8px;padding:14px 22px;border-top:1px solid var(--line);flex-shrink:0;}
+  .chat-input-row input{flex:1;border:1px solid var(--line);border-radius:999px;padding:10px 16px;font-family:'Manrope',sans-serif;font-size:13px;background:var(--wash);}
+  .chat-input-row button{border-radius:999px;padding:10px 18px;}
+  .chat-disclaimer{font-size:10.5px;color:var(--faint);text-align:center;padding:0 22px 14px;flex-shrink:0;}
+  .modal-box textarea{min-height:80px;resize:vertical;}
+</style>
+</head>
+<body>
+
+<header class="mobile-topbar">
+  <button class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+  </button>
+  <div class="wordmark">
+    <svg class="wordmark-flower" viewBox="0 0 200 200">
+      <g fill="#9E80D6">
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(36 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(108 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(180 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(252 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(324 100 100)"></path>
+      </g>
+      <g fill="#7E4FC0">
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(0 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(72 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(144 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(216 100 100)"></path>
+        <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(288 100 100)"></path>
+      </g>
+      <circle cx="100" cy="100" r="21" fill="#E79CB0"></circle>
+      <circle cx="100" cy="100" r="12.5" fill="#C46A86"></circle>
+    </svg>
+    <span class="wordmark-text">Endora</span>
+  </div>
+</header>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="wordmark">
+      <svg class="wordmark-flower" viewBox="0 0 200 200">
+        <g fill="#9E80D6">
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(36 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(108 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(180 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(252 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(324 100 100)"></path>
+        </g>
+        <g fill="#7E4FC0">
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(0 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(72 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(144 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(216 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(288 100 100)"></path>
+        </g>
+        <circle cx="100" cy="100" r="21" fill="#E79CB0"></circle>
+        <circle cx="100" cy="100" r="12.5" fill="#C46A86"></circle>
+      </svg>
+      <span class="wordmark-text">Endora</span>
+    </div>
+    <button class="drawer-close" id="drawerClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.6"></circle><path d="M5 20c1.2-4 4-6 7-6s5.8 2 7 6"></path></svg>
+      Profile
+    </button>
+    <button class="tab-btn" data-tab="analysis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9M11 19V5M18 19v-7"></path></svg>
+      Analysis
+    </button>
+    <button class="tab-btn" data-tab="journal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2.5"></rect><path d="M4 9.5h16M8 3v4M16 3v4"></path></svg>
+      Tracking journal
+    </button>
+    <button class="tab-btn" data-tab="learn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15Z"></path><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"></path></svg>
+      Educational materials
+    </button>
+    <button class="tab-btn" data-tab="community">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="3"></circle><circle cx="17" cy="10" r="2.4"></circle><path d="M2.8 19c.7-3.4 2.9-5.2 5.2-5.2s4.4 1.8 5.1 5.2M14.6 19c.5-2.4 1.9-3.8 3.4-3.9 1.6 0 3 1.4 3.5 3.9"></path></svg>
+      Community
+    </button>
+    <button class="tab-btn" data-tab="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5 3.5 7v12L9 17l6 2 5.5-2V5L15 7 9 5Z"></path><path d="M9 5v12M15 7v12"></path></svg>
+      Map
+    </button>
+  </nav>
+
+  <div class="sidebar-footer" id="sidebarFooter"></div>
+</aside>
+
+<main>
+
+  <!-- PROFILE -->
+  <section class="section active" id="tab-profile">
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Client profile</span>
+        <h1><span id="greetingWord">Good evening</span>, <span class="accent-italic" id="greetingName">Elena</span>.</h1>
+        <div class="sub">Your record is up to date through this week's check-in.</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="editProfileBtn">Edit profile</button>
+        <button class="btn btn-primary" id="messageCareBtn">Message care team</button>
+      </div>
+    </div>
+
+    <div class="card profile-hero">
+      <div class="avatar">EV</div>
+      <div>
+        <div class="profile-name" id="pName">Elena Voss</div>
+        <div class="profile-meta" id="pMeta">29 · Brooklyn, NY · Freelance graphic designer</div>
+        <div class="profile-badges">
+          <span class="badge premium">Premium member</span>
+          <span class="badge badge-pink">Diagnosed — active treatment</span>
+          <span class="badge">Hormonal therapy, 8 months</span>
+        </div>
+      </div>
+      <div class="stat-block">
+        <div class="num">6</div>
+        <div class="lbl">months in continuous tracking</div>
+      </div>
+    </div>
+
+    <div class="grid profile-grid">
+      <div class="card info-card">
+        <h3 id="pAboutTitle">About Elena</h3>
+        <div class="info-row"><span class="k">Diagnosed</span><span class="v" id="pDiagnosed">—</span></div>
+        <div class="info-row"><span class="k">Referral path</span><span class="v" id="pReferral">—</span></div>
+        <div class="info-row"><span class="k">Average cycle length</span><span class="v" id="pCycle">—</span></div>
+        <div class="info-row"><span class="k">Current treatment</span><span class="v" id="pTreatment">—</span></div>
+        <div class="info-row"><span class="k">Check-up frequency</span><span class="v" id="pCheckup">—</span></div>
+        <div class="info-row"><span class="k">Primary goal</span><span class="v" id="pGoal">—</span></div>
+      </div>
+      <div class="card info-card">
+        <h3>Care team</h3>
+        <div id="careTeamList"></div>
+      </div>
+    </div>
+
+    <div class="quickstats">
+      <div class="card qs-card"><div class="num" id="qsEntries">—</div><div class="lbl">journal entries logged</div></div>
+      <div class="card qs-card"><div class="num" id="qsAdherence">—</div><div class="lbl">medication adherence</div></div>
+      <div class="card qs-card"><div class="num">4</div><div class="lbl">ultrasound sessions on file</div></div>
+    </div>
+  </section>
+
+  <!-- ANALYSIS -->
+  <section class="section" id="tab-analysis">
+    <div class="card upsell-banner" id="analysisUpsellBanner" style="display:none;">
+      <div class="upsell-text">
+        <strong>You're viewing a generated example.</strong>
+        <p>Everything below is illustrative — become a client at one of our partner clinics to get your own AI-assisted analysis, reviewed by a real doctor.</p>
+      </div>
+      <button class="btn btn-primary" id="browseClinicsBtn" style="width:auto;flex-shrink:0;">Browse partner clinics</button>
+    </div>
+
+    <div class="card become-client-section" id="becomeClientSection" style="display:none;">
+      <h3 style="font-size:16px;margin-bottom:4px;">Partner clinics</h3>
+      <div class="sub" style="margin-bottom:14px;">Pick yours to become a client and unlock your own Analysis.</div>
+      <div class="search-bar" style="margin-bottom:14px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" id="becomeClientSearch" placeholder="Search clinics or neighborhoods">
+      </div>
+      <div class="onboard-clinic-list" id="becomeClientList" style="max-height:none;"></div>
+    </div>
+
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Analysis</span>
+        <h1>Your exams, <span class="accent-italic">side by side over time.</span></h1>
+        <div class="sub">Six-month observation window · figures below are generated to show how the view works — not real results.</div>
+      </div>
+      <button class="btn btn-primary ask-ai-btn" id="askAiAnalysisBtn" title="Ask Endora's AI assistant to walk you through what's on this page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
+        Ask AI
+      </button>
+    </div>
+
+    <div class="analysis-top">
+      <div class="card phase-flower-wrap">
+        <span class="eyebrow">Filter by cycle phase</span>
+        <svg id="phaseFlower" viewBox="0 0 150 150">
+          <g id="petalGroup">
+            <ellipse class="petal" data-phase="pre"    cx="75" cy="39"  rx="16" ry="32" fill="#9E80D6"></ellipse>
+            <ellipse class="petal" data-phase="during" cx="111" cy="75" rx="32" ry="16" fill="#E79CB0"></ellipse>
+            <ellipse class="petal" data-phase="inter"  cx="75" cy="111" rx="16" ry="32" fill="#9E80D6"></ellipse>
+            <ellipse class="petal" data-phase="post"   cx="39" cy="75"  rx="32" ry="16" fill="#E79CB0"></ellipse>
+          </g>
+          <circle id="phaseCenter" cx="75" cy="75" r="12" fill="#fff" stroke="#7E4FC0" stroke-width="2" style="cursor:pointer;"></circle>
+        </svg>
+        <div class="phase-label" id="phaseLabel">All phases</div>
+        <div class="phase-caption" id="phaseCaption">Tap a petal to isolate one phase</div>
+      </div>
+
+      <div class="card filters-card">
+        <div class="filters-row">
+          <div class="chip-group" id="examChips">
+            <button class="chip active" data-exam="all">All exams</button>
+            <button class="chip" data-exam="tvus">Transvaginal ultrasound</button>
+            <button class="chip" data-exam="mri">Pelvic MRI</button>
+            <button class="chip" data-exam="gyn">Gynecological exam</button>
+          </div>
+          <button class="btn btn-ghost" id="resetFilters">Reset filters</button>
+        </div>
+        <div class="month-scrub" id="monthScrub"></div>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-card-head">
+        <h3>Longitudinal comparison</h3>
+        <span class="legend-note">Same pelvic regions, re-examined each session</span>
+      </div>
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-card-head">
+        <h3>Session readout — generated example</h3>
+        <span class="legend-note" id="readoutMeta">Jun · Transvaginal ultrasound · Intermenstrual phase</span>
+      </div>
+      <div class="readout-tabs" id="readoutTabs"></div>
+      <canvas id="readoutChart" style="display:none;"></canvas>
+      <div class="gauge-row" id="gaugeRow" style="display:none;"></div>
+      <div id="readoutDrill" style="display:none;margin-top:14px;padding:14px 16px;background:var(--wash);border-radius:10px;font-size:12.5px;color:var(--ink);"></div>
+    </div>
+
+    <div class="card chart-card">
+      <div class="chart-card-head">
+        <h3>Linked images &amp; sequences</h3>
+        <span class="legend-note" id="galleryCount">6 sessions on file</span>
+      </div>
+      <div class="gallery-strip" id="galleryStrip"></div>
+    </div>
+
+    <div class="card feedback-card">
+      <span class="eyebrow">Care team feedback — <span id="fbMonthLabel">Jun</span></span>
+      <span class="feedback-source">Dr. Carla Méndez, OB-GYN</span>
+      <p id="fbDoctorNote">Loading…</p>
+      <span class="feedback-source feedback-source-ai">AI cross-check</span>
+      <p id="fbAiNote">Loading…</p>
+      <div class="disclaimer">Risk-prioritization based on symptom patterns, not a diagnosis. Dr. Méndez reviews and decides on all findings for the selected session above.</div>
+    </div>
+  </section>
+
+  <!-- JOURNAL -->
+  <section class="section" id="tab-journal">
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Tracking journal</span>
+        <h1>Log today, <span class="accent-italic">so nothing gets lost</span> by your next visit.</h1>
+        <div class="sub">Everything here reaches Dr. Méndez's team automatically.</div>
+      </div>
+      <button class="btn btn-primary ask-ai-btn" id="askAiJournalBtn" title="Ask Endora's AI assistant about your recent tracking entries">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"></path><circle cx="12" cy="12" r="3.2"></circle></svg>
+        Ask AI
+      </button>
+    </div>
+
+    <div class="grid journal-grid">
+      <div class="card cal-card">
+        <div class="cal-head">
+          <h3 id="calTitle">July 2026</h3>
+          <div class="cal-nav">
+            <button aria-label="Previous month" id="calPrev">‹</button>
+            <button aria-label="Next month" id="calNext">›</button>
+          </div>
+        </div>
+        <table class="cal-table" id="calTable"></table>
+        <div class="cal-legend">
+          <span><i class="dot dot-period"></i> Period day</span>
+          <span><i class="dot dot-med"></i> Medication taken</span>
+          <span><i class="dot dot-pain"></i> Pain ≥ 6</span>
+        </div>
+      </div>
+
+      <div class="card entry-card">
+        <div class="entry-date" id="entryDate">Tuesday, July 21</div>
+        <h3>Today's entry</h3>
+        <label class="field-label">Medication</label>
+        <div class="med-list">
+          <div class="med-item"><input type="checkbox" id="med1" checked><label for="med1">Combined hormonal pill</label><span class="dose">morning</span></div>
+          <div class="med-item"><input type="checkbox" id="med2"><label for="med2">Naproxen, as needed</label><span class="dose">not taken</span></div>
+          <div class="med-item"><input type="checkbox" id="med3" checked><label for="med3">Magnesium supplement</label><span class="dose">evening</span></div>
+        </div>
+        <label class="field-label">Pain level today</label>
+        <div class="pain-scale" id="painScale"></div>
+        <label class="field-label">Symptoms</label>
+        <div class="tag-row" id="tagRow">
+          <span class="tag-chip">Bloating</span>
+          <span class="tag-chip selected">Fatigue</span>
+          <span class="tag-chip">Cramping</span>
+          <span class="tag-chip">Nausea</span>
+          <span class="tag-chip">Lower back pain</span>
+        </div>
+        <label class="field-label">Note to your care team</label>
+        <textarea class="note-field" id="doctorNote">Pain eased by early afternoon after the pill. Still tired most of the day.</textarea>
+        <button class="btn btn-primary" id="sendDoctorBtn" style="width:100%;justify-content:center;">Send to doctor</button>
+        <div class="feed-title">Recent entries</div>
+        <div id="feedList">
+          <div class="feed-item"><span class="fd">Jul 20</span><span class="fv">Pain 3/10 · meds on time</span></div>
+          <div class="feed-item"><span class="fd">Jul 19</span><span class="fv">Pain 6/10 · flagged for review</span></div>
+          <div class="feed-item"><span class="fd">Jul 18</span><span class="fv">Pain 2/10 · meds on time</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDUCATIONAL MATERIALS -->
+  <section class="section" id="tab-learn">
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Educational materials</span>
+        <h1>Learn it in <span class="accent-italic">your own words,</span> not the chart's.</h1>
+        <div class="sub">Short, standalone lessons on whatever's relevant today — not a course to work through in order.</div>
+      </div>
+    </div>
+    <div class="glossary-strip" id="glossaryStrip"></div>
+    <div class="card glossary-def" id="glossaryDef"></div>
+    <div class="card search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input type="text" id="lessonSearch" placeholder="Search lessons — pain flare, surgery, fertility...">
+    </div>
+    <div class="cat-row" id="topicRow">
+      <button class="cat-chip active" data-topic="all">All topics</button>
+      <button class="cat-chip" data-topic="Understanding your diagnosis">Diagnosis</button>
+      <button class="cat-chip" data-topic="Living with treatment">Treatment</button>
+      <button class="cat-chip" data-topic="Talking to your doctor">Doctor visits</button>
+    </div>
+    <div id="lessonGroups"></div>
+  </section>
+
+  <!-- COMMUNITY -->
+  <section class="section" id="tab-community">
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Community</span>
+        <h1>You're not reading this <span class="accent-italic">alone.</span></h1>
+        <div class="sub">A moderated space for people at every stage of the journey.</div>
+      </div>
+      <button class="btn btn-primary" id="startDiscussionBtn">Start a discussion</button>
+    </div>
+    <div class="cat-row" id="catRow">
+      <button class="cat-chip active" data-cat="all">All</button>
+      <button class="cat-chip" data-cat="new">Newly diagnosed</button>
+      <button class="cat-chip" data-cat="pain">Managing pain</button>
+      <button class="cat-chip" data-cat="fertility">Fertility &amp; family planning</button>
+      <button class="cat-chip" data-cat="wins">Success stories</button>
+    </div>
+    <div class="post-list" id="postList"></div>
+  </section>
+
+  <!-- MAP -->
+  <section class="section" id="tab-map">
+    <div class="page-header">
+      <div>
+        <span class="eyebrow">Map</span>
+        <h1>Partner clinics <span class="accent-italic" id="mapCityTitle">in New York.</span></h1>
+        <div class="sub" id="mapCitySub">Generated example clinics for demonstration — not real institutions.</div>
+      </div>
+    </div>
+    <div class="city-row">
+      <div class="city-search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" id="citySearchInput" placeholder="Search your city…">
+      </div>
+      <div class="city-chip-row" id="cityChipRow">
+        <button class="city-chip" data-city="ba">Buenos Aires</button>
+        <button class="city-chip active" data-city="nyc">New York</button>
+        <button class="city-chip" data-city="boston">Boston</button>
+        <button class="city-chip" data-city="chicago">Chicago</button>
+        <button class="city-chip" data-city="miami">Miami</button>
+      </div>
+      <div class="city-search-hint" id="citySearchHint"></div>
+    </div>
+    <div class="map-layout">
+      <div id="clinicMap"></div>
+      <div class="clinic-panel">
+        <div class="clinic-search">
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input type="text" id="clinicSearch" placeholder="Search clinics or neighborhoods">
+          </div>
+        </div>
+        <div class="clinic-count" id="clinicCount"></div>
+        <div class="clinic-list" id="clinicList"></div>
+        <div class="clinic-panel-footer" id="clinicPanelFooter">Names and locations here are generated examples, not real clinics.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="onboard-overlay" id="onboardOverlay">
+  <svg class="onboard-bg-flower" viewBox="0 0 200 200">
+    <g fill="#9E80D6">
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(36 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(108 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(180 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(252 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(324 100 100)"></path>
+    </g>
+    <g fill="#7E4FC0">
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(0 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(72 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(144 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(216 100 100)"></path>
+      <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(288 100 100)"></path>
+    </g>
+    <circle cx="100" cy="100" r="21" fill="#E79CB0"></circle>
+    <circle cx="100" cy="100" r="12.5" fill="#C46A86"></circle>
+  </svg>
+
+  <div class="onboard-card">
+  <div class="onboard-box">
+    <div class="onboard-logo">
+      <svg viewBox="0 0 200 200" class="onboard-logo-svg">
+        <g fill="#9E80D6">
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(36 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(108 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(180 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(252 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(324 100 100)"></path>
+        </g>
+        <g fill="#7E4FC0">
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(0 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(72 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(144 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(216 100 100)"></path>
+          <path d="M 100 100 C 84 74 84 40 100 13 C 116 40 116 74 100 100 Z" transform="rotate(288 100 100)"></path>
+        </g>
+        <circle cx="100" cy="100" r="21" fill="#E79CB0"></circle>
+        <circle cx="100" cy="100" r="12.5" fill="#C46A86"></circle>
+      </svg>
+    </div>
+
+    <div class="onboard-progress" id="onboardProgress">
+      <span class="dot" data-step="1"></span>
+      <span class="dot" data-step="2"></span>
+      <span class="dot" data-step="3"></span>
+    </div>
+
+    <div class="onboard-step active" id="onboardStep1">
+      <span class="eyebrow" style="display:block;text-align:center;margin-bottom:8px;">Welcome</span>
+      <h2>Let's get you set up.</h2>
+      <p class="onboard-sub">Just your name and email — takes ten seconds.</p>
+      <label class="field-label">Your name</label>
+      <input class="field-input" id="onbName" type="text" placeholder="Your name">
+      <label class="field-label" style="margin-top:12px;">Email</label>
+      <input class="field-input" id="onbEmail" type="email" placeholder="you@example.com">
+      <button class="btn btn-primary" id="onbContinue1" style="width:100%;justify-content:center;margin-top:18px;" disabled>Continue</button>
+    </div>
+
+    <div class="onboard-step" id="onboardStep2">
+      <span class="eyebrow" style="display:block;text-align:center;margin-bottom:8px;">One quick question</span>
+      <h2>Are you already a patient at one of our partner clinics?</h2>
+      <p class="onboard-sub">This decides what you get access to — you can always link a clinic later.</p>
+      <button class="onboard-choice" id="onbPremiumPath">
+        <span class="onboard-choice-icon">🩺</span>
+        <span class="onboard-choice-text">
+          <strong>Yes, I'm a patient</strong>
+          <span>Find my clinic → unlock full Analysis &amp; care team features</span>
+        </span>
+      </button>
+      <button class="onboard-choice" id="onbFreemium">
+        <span class="onboard-choice-icon">🌱</span>
+        <span class="onboard-choice-text">
+          <strong>Not yet</strong>
+          <span>Just here to track symptoms for now</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="onboard-step" id="onboardStep3">
+      <span class="eyebrow" style="display:block;text-align:center;margin-bottom:8px;">Find your clinic</span>
+      <h2>Who's your OB-GYN?</h2>
+      <div class="search-bar" style="margin:14px 0;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input type="text" id="onbClinicSearch" placeholder="Search clinics or neighborhoods">
+      </div>
+      <div class="onboard-clinic-list" id="onbClinicList"></div>
+      <div class="onboard-step-actions">
+        <button class="btn btn-ghost" id="onbBack3">Back</button>
+        <button class="btn btn-primary" id="onbConfirmClinic" disabled>Confirm &amp; unlock premium</button>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<div class="fab-wrap" id="fabWrap">
+  <div class="fab-menu" id="fabMenu">
+    <button class="fab-menu-item" id="fabMessageCare">
+      <span class="fab-menu-icon">💬</span> Message care team
+    </button>
+    <button class="fab-menu-item" id="fabLogToday">
+      <span class="fab-menu-icon">📝</span> Log today
+    </button>
+  </div>
+  <button class="fab-main" id="fabMain" aria-label="Quick actions">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" id="fabIcon"><path d="M12 5v14M5 12h14"></path></svg>
+  </button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   LOCAL DATA LAYER — no backend. Everything below stands in for the
+   FastAPI server: seed data + a fetch() shim backed by localStorage,
+   so writes (journal entries, community posts, likes, profile edits)
+   persist in *your own browser* across reloads. This is what makes it
+   possible to host the whole thing as static files (e.g. GitHub Pages)
+   — see README for the one caveat that comes with that trade-off.
+   ===================================================================== */
+(function(){
+  var REGIONS = ["Right ovary mobility","Left ovary mobility","Pouch of Douglas","Rectovaginal septum","Bladder wall"];
+  var FINDINGS = ["Tenderness","Nodularity","Uterine mobility","Adnexal fullness"];
+  var MONTHS_META = [
+    {month:"Jan", order_idx:0, date_label:"Jan 9",  phase:"during", primary_exam:"tvus", pain:7.0, lesion_mm:18.0, mobility_score:4.0},
+    {month:"Feb", order_idx:1, date_label:"Feb 14", phase:"inter",  primary_exam:"tvus", pain:3.0, lesion_mm:17.0, mobility_score:5.0},
+    {month:"Mar", order_idx:2, date_label:"Mar 11", phase:"pre",    primary_exam:"mri",  pain:6.0, lesion_mm:19.0, mobility_score:4.0},
+    {month:"Apr", order_idx:3, date_label:"Apr 15", phase:"during", primary_exam:"tvus", pain:8.0, lesion_mm:17.0, mobility_score:5.0},
+    {month:"May", order_idx:4, date_label:"May 20", phase:"post",   primary_exam:"gyn",  pain:4.0, lesion_mm:16.0, mobility_score:6.0},
+    {month:"Jun", order_idx:5, date_label:"Jun 14", phase:"inter",  primary_exam:"tvus", pain:2.0, lesion_mm:15.0, mobility_score:6.0},
+  ];
+
+  function seededRandom(seedStr){
+    var h = 0;
+    for(var i=0;i<seedStr.length;i++){ h = (Math.imul(31,h) + seedStr.charCodeAt(i)) | 0; }
+    return function(){ h = (Math.imul(h, 1664525) + 1013904223) | 0; return ((h >>> 0) / 4294967296); };
+  }
+  // Same generation logic as the backend: every session gets results for
+  // every exam type, not just its "primary" one.
+  function regionScores(month, exam){
+    var monthIdx = MONTHS_META.findIndex(function(s){ return s.month===month; });
+    var rnd = seededRandom(month+'-'+exam);
+    var names = exam === 'gyn' ? FINDINGS : REGIONS;
+    var range = exam === 'tvus' ? [2.2,4.5] : exam === 'mri' ? [1.8,4.2] : [1.5,3.8];
+    var drift = exam === 'tvus' ? 0.12 : exam === 'mri' ? 0.10 : 0.15;
+    return names.map(function(name){
+      var v = range[0] + rnd()*(range[1]-range[0]) - monthIdx*drift;
+      return {metric:name, value: Math.round(Math.max(0.2, Math.min(5, v))*100)/100};
+    });
+  }
+
+  var DOCTOR_NOTES = {
+    Jan: "First mapped session after diagnosis. Baseline established across all five regions — nothing here yet to compare against, so treat these numbers as a starting point.",
+    Feb: "Intermenstrual scan came back calmer than January, as expected outside the menstrual window. Continuing to build out the baseline.",
+    Mar: "Added an MRI this cycle to get a clearer look at the rectovaginal septum before starting hormonal therapy. Findings support starting treatment.",
+    Apr: "First scan since starting hormonal therapy. Some regions still catching up to treatment — not unusual this early.",
+    May: "Gynecological exam only this cycle — no new tenderness on exam, consistent with the imaging trend.",
+    Jun: "Overall trend is stable to improving. Pouch of Douglas mobility has held steady across the last three sessions — no new evidence of obliteration. Continue current hormonal regimen; we'll re-image after your next cycle if pain scores rise.",
+  };
+  var AI_NOTES = {
+    Jan: "Baseline recorded. No prior sessions to compare against yet.",
+    Feb: "Reported pain tracked closely with imaging severity this cycle — no mismatch worth flagging.",
+    Mar: "MRI findings and reported pain are broadly consistent this session.",
+    Apr: "Reported pain ran higher than imaging alone would suggest this cycle — worth mentioning at your next visit.",
+    May: "Exam findings and reported symptoms are aligned this month.",
+    Jun: "Reported pain around the menstrual phase has run higher than the ultrasound findings alone would suggest for two consecutive cycles — a pattern worth flagging at your next visit rather than waiting three months.",
+  };
+
+  var PREMIUM_DEMO_FIELDS = {
+    age: 29, city: "Brooklyn, NY", occupation: "Freelance graphic designer",
+    diagnosed_label: "Nov 2025 · Stage III (rASRM)", referral_path: "Prioritized by risk score → specialist",
+    cycle_length_days: 27, treatment: "Combined hormonal therapy", checkup_frequency: "Every 3 months",
+    journal_entries_logged: 148, medication_adherence_pct: 94,
+    care_team: [
+      {name:"Dr. Carla Méndez", role:"Medical director, OB-GYN"},
+      {name:"Dr. Raj Shah", role:"Sonographer, endometriosis mapping"},
+      {name:"Nadia Park, NP", role:"Nurse practitioner, day-to-day contact"},
+    ],
+  };
+  var SEED_PROFILE = {
+    id: 1, name: "", email: null, age: 0, city: "", occupation: "",
+    diagnosed_label: "Not yet diagnosed", referral_path: "",
+    cycle_length_days: 28, treatment: "None yet", checkup_frequency: "\u2014",
+    primary_goal: "Know if a symptom needs urgent attention",
+    journal_entries_logged: 0, medication_adherence_pct: 0,
+    care_team: [],
+    onboarded: false, is_premium: false, clinic_id: null, clinic_name: null,
+  };
+
+  var SEED_JOURNAL = [
+    {id:1,  entry_date:"2026-07-21", pain_level:2, on_period:false, flagged:false, note:"Pain eased by early afternoon after the pill. Still tired most of the day.",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Fatigue"]},
+    {id:2,  entry_date:"2026-07-20", pain_level:3, on_period:false, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:[]},
+    {id:3,  entry_date:"2026-07-19", pain_level:6, on_period:false, flagged:true, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:true},{name:"Magnesium supplement · evening",taken:false}], symptoms:["Cramping","Lower back pain"]},
+    {id:4,  entry_date:"2026-07-18", pain_level:2, on_period:false, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:[]},
+    {id:5,  entry_date:"2026-07-17", pain_level:3, on_period:false, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Bloating"]},
+    {id:6,  entry_date:"2026-07-08", pain_level:4, on_period:false, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Fatigue"]},
+    {id:7,  entry_date:"2026-07-05", pain_level:5, on_period:true, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:true},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Cramping"]},
+    {id:8,  entry_date:"2026-07-04", pain_level:6, on_period:true, flagged:true, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:true},{name:"Magnesium supplement · evening",taken:false}], symptoms:["Cramping","Nausea"]},
+    {id:9,  entry_date:"2026-07-03", pain_level:5, on_period:true, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:true},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Cramping"]},
+    {id:10, entry_date:"2026-07-02", pain_level:4, on_period:true, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:["Bloating","Fatigue"]},
+    {id:11, entry_date:"2026-07-01", pain_level:3, on_period:true, flagged:false, note:"",
+     meds:[{name:"Combined hormonal pill · morning",taken:true},{name:"Naproxen, as needed",taken:false},{name:"Magnesium supplement · evening",taken:true}], symptoms:[]},
+  ];
+
+  var SEED_COMMUNITY = [
+    {id:1, author:"M., 31 · Chicago", category:"pain", body:"Does anyone else get worse cramping the day before their period, not during? My scans always land on day 2\u20133, so I worry it's not catching the worst of it.", likes:32, replies:14},
+    {id:2, author:"S., 26 · New York", category:"new", body:"Got my results back this week after two years of being told it was \u201cjust bad periods.\u201d Relieved and angry at the same time. How long until the tracking started feeling like less of a chore?", likes:58, replies:21},
+    {id:3, author:"E., 29 · Brooklyn", category:"wins", body:"Eight months into hormonal therapy and my last two scans came back stable. First time a check-up felt boring instead of scary \u2014 I'll take it.", likes:47, replies:9},
+    {id:4, author:"R., 34 · Austin", category:"fertility", body:"Starting to think about IVF timing around my treatment plan. Has anyone paused hormonal therapy for a retrieval cycle and how did your team handle the gap in monitoring?", likes:29, replies:17},
+  ];
+
+  var WM = "https://commons.wikimedia.org/wiki/Special:FilePath/";
+  var SEED_CLINICS = [
+    {id:1, name:"Hospital Italiano de Buenos Aires — Ginecología y Obstetricia", area:"Almagro, CABA", lat:-34.6066, lng:-58.4250,
+     tags:["Teaching hospital","Endometriosis imaging"], icon:"🏥", grad1:"#9E80D6", grad2:"#7E4FC0", is_home:true,
+     photo_url: WM+"Hospital-italiano-buenos-aires.jpg?width=400", photo_credit:"Wikimedia Commons"},
+    {id:2, name:"Hospital Rivadavia — Ginecología", area:"Palermo, CABA", lat:-34.5851, lng:-58.4020,
+     tags:["Public hospital","Founded as Hospital de Mujeres (1774)"], icon:"🏥", grad1:"#E79CB0", grad2:"#C46A86", is_home:false,
+     photo_url: WM+"Hospital_rivadavia_gcba_2017.jpg?width=400", photo_credit:"Gob. Ciudad de Buenos Aires · CC BY 2.5 AR · Wikimedia Commons"},
+    {id:3, name:"Hospital Británico de Buenos Aires", area:"Constitución, CABA", lat:-34.6255, lng:-58.3805,
+     tags:["Surgical gynecology"], icon:"🩺", grad1:"#8FB0A8", grad2:"#6F9E8C", is_home:false,
+     photo_url: WM+"Hospital_Brit%C3%A1nico_Central_(fachada).jpg?width=400", photo_credit:"CC BY 3.0 · Wikimedia Commons"},
+    {id:4, name:"Hospital Fernández — Ginecología", area:"Palermo, CABA", lat:-34.5885, lng:-58.4130,
+     tags:["Public hospital","General gynecology"], icon:"🏥", grad1:"#5B3894", grad2:"#E79CB0", is_home:false,
+     photo_url: WM+"Hospital_fernandez_buenosaires.jpg?width=400", photo_credit:"Wikimedia Commons"},
+    {id:5, name:'Hospital de Clínicas "José de San Martín"', area:"Balvanera, CABA", lat:-34.5989, lng:-58.3980,
+     tags:["Teaching hospital","University of Buenos Aires"], icon:"🏥", grad1:"#7E4FC0", grad2:"#9E80D6", is_home:false,
+     photo_url: WM+"Hospital_de_Cl%C3%ADnicas_de_Buenos_Aires_(Av._C%C3%B3rdoba).JPG?width=400", photo_credit:"Wikimedia Commons"},
+    {id:6, name:"CEGYR — Centro de Estudios en Ginecología y Reproducción", area:"Balvanera / Tribunales, CABA", lat:-34.6015, lng:-58.3840,
+     tags:["Reproductive medicine","Fertility"], icon:"🧬", grad1:"#9E80D6", grad2:"#E79CB0", is_home:false,
+     photo_url:null, photo_credit:null},
+  ];
+
+  var SEED_LESSONS = [
+    {id:1, group_name:"Understanding your diagnosis", order_idx:0, title:"What Stage III actually means", description:"Reading your rASRM score without the jargon", duration:"6 min",
+     body:"Stage III means moderate endometriosis — deeper implants plus some scar tissue, often around an ovary. It describes how much tissue is involved, not how much pain you feel; the two do not always move together."},
+    {id:2, group_name:"Understanding your diagnosis", order_idx:1, title:"How ultrasound mapping works", description:"Why the same regions get re-scanned each cycle", duration:"8 min",
+     body:"Endometriosis can look different depending on where you are in your cycle, so the same five pelvic regions are checked at every visit — before, during, and after your period."},
+    {id:3, group_name:"Understanding your diagnosis", order_idx:2, title:"When an MRI gets added", description:"What it adds beyond ultrasound, and when it does not", duration:"5 min",
+     body:"MRI is added when ultrasound is inconclusive or when your team needs a clearer picture of deep or hard-to-reach areas. It is not a routine replacement for ultrasound."},
+    {id:4, group_name:"Living with treatment", order_idx:0, title:"Hormonal therapy, week by week", description:"What is normal to feel in the first three months", duration:"7 min",
+     body:"Spotting, mild nausea, or mood shifts in the first few weeks are common and usually settle by month two or three."},
+    {id:5, group_name:"Living with treatment", order_idx:1, title:"Building a flare-day plan", description:"A short checklist for your worst pain days", duration:"4 min",
+     body:"A flare-day plan is just three things decided in advance: which medication to take and when, who to message if it does not help, and what rest actually looks like for you that day."},
+    {id:6, group_name:"Talking to your doctor", order_idx:0, title:"Bringing six months of data into a 12-minute visit", description:"How to use your chart to steer the conversation", duration:"5 min",
+     body:"Before your visit, glance at the Analysis tab and note anything that changed — a new symptom, a pattern by cycle phase, a month that felt worse."},
+    {id:7, group_name:"Talking to your doctor", order_idx:1, title:"Questions worth asking before surgery", description:"A short list built from patients who've been there", duration:"6 min",
+     body:"What will change if we wait three more months? What does recovery actually look like week by week? What happens if the surgery finds less — or more — than expected?"},
+  ];
+
+  var SEED_GLOSSARY = [
+    {id:1, term:"Endometrioma", definition:"A cyst on the ovary formed when endometrial-like tissue grows inside it — sometimes called a \u201cchocolate cyst\u201d for the dark fluid it contains."},
+    {id:2, term:"Adenomyosis", definition:"A related condition where tissue similar to the uterine lining grows into the muscular wall of the uterus, often causing heavier, more painful periods."},
+    {id:3, term:"Pouch of Douglas", definition:"The space behind the uterus and in front of the rectum — a common site for endometriosis lesions and adhesions, and one of the regions re-scanned at every visit."},
+    {id:4, term:"Laparoscopy", definition:"A minimally invasive surgery using a small camera, sometimes used to confirm and treat endometriosis directly when imaging alone is not conclusive."},
+    {id:5, term:"rASRM staging", definition:"A four-stage scoring system (I\u2013IV) doctors use to describe how extensive endometriosis is, based on what is seen during imaging or surgery."},
+  ];
+
+  /* ---- localStorage-backed mutable state ---- */
+  function loadLS(key, fallback){ try{ var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+  function saveLS(key, val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+  var profileState = loadLS('endo_profile', SEED_PROFILE);
+  var journalState = loadLS('endo_journal', SEED_JOURNAL);
+  var communityState = loadLS('endo_community', SEED_COMMUNITY);
+  var nextJournalId = loadLS('endo_next_journal_id', 1000);
+  var nextPostId = loadLS('endo_next_post_id', 1000);
+
+  function jsonResponse(data){ return Promise.resolve({ ok:true, status:200, json: function(){ return Promise.resolve(data); } }); }
+
+  var realFetch = window.fetch ? window.fetch.bind(window) : null;
+
+  window.fetch = function(url, opts){
+    opts = opts || {};
+    var method = (opts.method || 'GET').toUpperCase();
+    if(typeof url !== 'string' || url.indexOf('/api/') !== 0){
+      return realFetch ? realFetch(url, opts) : Promise.reject(new Error('fetch not available for '+url));
+    }
+    var body = opts.body ? JSON.parse(opts.body) : null;
+    var m;
+
+    if(url === '/api/profile' && method === 'GET') return jsonResponse(profileState);
+    if(url === '/api/profile' && method === 'PUT'){
+      if(body.primary_goal !== undefined) profileState.primary_goal = body.primary_goal;
+      if(body.cycle_length_days !== undefined) profileState.cycle_length_days = body.cycle_length_days;
+      saveLS('endo_profile', profileState);
+      return jsonResponse(profileState);
+    }
+    if(url === '/api/onboard' && method === 'POST'){
+      profileState.name = body.name;
+      profileState.email = body.email;
+      profileState.onboarded = true;
+      profileState.is_premium = !!body.is_premium;
+
+      // Always reset to a clean slate on submission — must not depend on
+      // whatever was left over in localStorage from an earlier test.
+      profileState.age = 0;
+      profileState.city = "";
+      profileState.occupation = "";
+      profileState.diagnosed_label = "Not yet diagnosed";
+      profileState.referral_path = "";
+      profileState.cycle_length_days = 28;
+      profileState.treatment = "None yet";
+      profileState.checkup_frequency = "\u2014";
+      profileState.journal_entries_logged = 0;
+      profileState.medication_adherence_pct = 0;
+      profileState.care_team = [];
+
+      if(body.is_premium){
+        var clinic = body.clinic_id != null ? SEED_CLINICS.find(function(c){ return c.id === body.clinic_id; }) : null;
+        profileState.clinic_id = clinic ? clinic.id : null;
+        profileState.clinic_name = clinic ? clinic.name : null;
+        // Premium links a real clinic — it does not invent clinical history
+        // or a care team for a clinic the user just picked. Their profile
+        // stays theirs to fill in; care team appears once assigned.
+      } else {
+        profileState.clinic_id = null;
+        profileState.clinic_name = null;
+      }
+      saveLS('endo_profile', profileState);
+      return jsonResponse(profileState);
+    }
+    if(url === '/api/sessions' && method === 'GET') return jsonResponse(MONTHS_META);
+    if((m = url.match(/^\/api\/sessions\/([^\/]+)\/results\?exam_type=([^&]+)$/)) && method === 'GET'){
+      return jsonResponse(regionScores(m[1], m[2]));
+    }
+    if((m = url.match(/^\/api\/sessions\/([^\/]+)\/feedback$/)) && method === 'GET'){
+      return jsonResponse({doctor_note: DOCTOR_NOTES[m[1]] || '', ai_note: AI_NOTES[m[1]] || ''});
+    }
+    if(url.indexOf('/api/journal?') === 0 && method === 'GET'){
+      var sorted = journalState.slice().sort(function(a,b){ return b.entry_date < a.entry_date ? -1 : 1; });
+      return jsonResponse(sorted);
+    }
+    if(url === '/api/journal' && method === 'POST'){
+      var entry = { id: nextJournalId++, entry_date: body.entry_date, pain_level: body.pain_level,
+        meds: body.meds, symptoms: body.symptoms, on_period: !!body.on_period, note: body.note || '',
+        flagged: body.pain_level >= 6, created_at: new Date().toISOString() };
+      journalState.push(entry);
+      saveLS('endo_journal', journalState); saveLS('endo_next_journal_id', nextJournalId);
+      profileState.journal_entries_logged = (profileState.journal_entries_logged||0) + 1;
+      saveLS('endo_profile', profileState);
+      return jsonResponse(entry);
+    }
+    if(url === '/api/community' && method === 'GET'){
+      return jsonResponse(communityState.slice().sort(function(a,b){ return b.id-a.id; }));
+    }
+    if(url === '/api/community' && method === 'POST'){
+      var post = { id: nextPostId++, author: body.author, category: body.category, body: body.body, likes:0, replies:0, created_at: new Date().toISOString() };
+      communityState.push(post);
+      saveLS('endo_community', communityState); saveLS('endo_next_post_id', nextPostId);
+      return jsonResponse(post);
+    }
+    if((m = url.match(/^\/api\/community\/(\d+)\/like\?delta=(-?\d+)$/)) && method === 'POST'){
+      var id = +m[1], delta = +m[2];
+      var post2 = communityState.find(function(p){ return p.id===id; });
+      if(post2){ post2.likes = Math.max(0, post2.likes+delta); saveLS('endo_community', communityState); return jsonResponse({id:id, likes:post2.likes}); }
+      return jsonResponse({id:id, likes:0});
+    }
+    if(url === '/api/clinics' && method === 'GET') return jsonResponse(SEED_CLINICS);
+    if(url === '/api/lessons' && method === 'GET') return jsonResponse(SEED_LESSONS);
+    if(url === '/api/glossary' && method === 'GET') return jsonResponse(SEED_GLOSSARY);
+
+    console.warn('Unhandled local API route:', method, url);
+    return jsonResponse({});
+  };
+})();
+/* =================== END LOCAL DATA LAYER =================== */
+
+function safe(name, fn){ try{ fn(); } catch(err){ console.error('['+name+'] failed:', err); } }
+
+/* ---------------- Time-of-day greeting (Buenos Aires local time) ---------------- */
+safe('greeting', function(){
+  var hourStr = new Intl.DateTimeFormat('en-US', {timeZone:'America/Argentina/Buenos_Aires', hour:'numeric', hour12:false}).format(new Date());
+  var hour = parseInt(hourStr, 10);
+  var word = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  var el = document.getElementById('greetingWord');
+  if(el) el.textContent = word;
+});
+
+/* ---------------- Generic modal ---------------- */
+var modalOverlay, modalContent;
+safe('modal', function(){
+  modalOverlay = document.getElementById('modalOverlay');
+  modalContent = document.getElementById('modalContent');
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', function(e){ if(e.target === modalOverlay) closeModal(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+});
+function openModal(html){
+  modalContent.innerHTML = html;
+  modalOverlay.classList.add('show');
+}
+function closeModal(){
+  modalOverlay.classList.remove('show');
+  document.getElementById('modalBox').classList.remove('chat-modal');
+}
+
+/* ---------------- Ask AI chat ---------------- */
+function openAiChat(contextLabel, summaryText){
+  openModal(
+    '<div class="chat-wrap">' +
+      '<div class="chat-header">' +
+        '<div class="chat-ai-avatar">\u2726</div>' +
+        '<div><div class="chat-title">Endora AI</div><div class="chat-sub">Context: '+contextLabel+'</div></div>' +
+      '</div>' +
+      '<div class="chat-messages" id="chatMessages"></div>' +
+      '<div class="chat-input-row">' +
+        '<input type="text" id="chatInput" placeholder="Ask a question about this page\u2026">' +
+        '<button class="btn btn-primary" id="chatSendBtn">Send</button>' +
+      '</div>' +
+      '<div class="chat-disclaimer">Simulated for this prototype \u2014 not medical advice, and not a substitute for your care team.</div>' +
+    '</div>'
+  );
+  document.getElementById('modalBox').classList.add('chat-modal');
+  var messages = document.getElementById('chatMessages');
+  addChatMessage(messages, 'ai', summaryText);
+
+  function sendChat(){
+    var input = document.getElementById('chatInput');
+    var text = input.value.trim();
+    if(!text) return;
+    addChatMessage(messages, 'user', text);
+    input.value = '';
+    var typing = addChatMessage(messages, 'ai', '\u2026');
+    setTimeout(function(){
+      typing.textContent = craftAiReply(text, contextLabel);
+      messages.scrollTop = messages.scrollHeight;
+    }, 600);
+  }
+  document.getElementById('chatSendBtn').addEventListener('click', sendChat);
+  document.getElementById('chatInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') sendChat(); });
+  document.getElementById('chatInput').focus();
+}
+function addChatMessage(container, role, text){
+  var el = document.createElement('div');
+  el.className = 'chat-msg chat-msg-' + role;
+  el.textContent = text;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+function craftAiReply(text, contextLabel){
+  var t = text.toLowerCase();
+  if(t.indexOf('pain') > -1){
+    return "Reported pain has generally trended down since April, aside from a flagged spike around your period in June. If it's felt different lately, that's worth mentioning at your next check-in.";
+  }
+  if(t.indexOf('mri') > -1 || t.indexOf('ultrasound') > -1 || t.indexOf('scan') > -1 || t.indexOf('imaging') > -1){
+    return "Your most recent imaging session was in June (transvaginal ultrasound, intermenstrual phase). The March MRI is still the most detailed look at the rectovaginal septum on file.";
+  }
+  if(t.indexOf('med') > -1 || t.indexOf('pill') > -1 || t.indexOf('treatment') > -1){
+    return "Medication adherence has been strong this month. If a specific medication isn't sitting well, log it as a symptom in today's entry \u2014 that flag goes straight to your care team.";
+  }
+  if(t.indexOf('doctor') > -1 || t.indexOf('urgent') > -1 || t.indexOf('worried') > -1){
+    return "If this feels urgent, use \u201cSend to doctor\u201d so your care team sees it directly \u2014 I can help you think it through, but I'm not a replacement for them.";
+  }
+  if(contextLabel.indexOf('Tracking') > -1){
+    return "Noted \u2014 I've looked at your recent entries. Nothing here looks urgent right now, but flag it to your care team if it's bothering you before your next visit.";
+  }
+  return "Good question. Based on what's in your chart, nothing here looks urgent right now \u2014 but bring it up at your next check-in, or send a note to your care team if it's bothering you sooner.";
+}
+
+/* ---------------- Profile: load from API ---------------- */
+var currentProfile = null;
+
+function renderSidebarFooter(p){
+  var footer = document.getElementById('sidebarFooter');
+  if(p.is_premium){
+    footer.innerHTML =
+      '<div class="premium-card">' +
+        '<span class="eyebrow">Premium \u00b7 via partner clinic</span>' +
+        '<div class="clinic">' + (p.clinic_name || 'Partner clinic') + '</div>' +
+        '<div class="doctor">' + ((p.care_team && p.care_team[0]) ? p.care_team[0].name : 'Care team') + ' \u00b7 care team</div>' +
+      '</div>';
+  } else {
+    footer.innerHTML =
+      '<div class="freemium-card">' +
+        '<span class="eyebrow">Freemium</span>' +
+        '<p>Link your clinic to unlock Analysis and your full care team.</p>' +
+        '<button id="upgradeFromSidebar">Link my clinic</button>' +
+      '</div>';
+    var btn = document.getElementById('upgradeFromSidebar');
+    if(btn) btn.addEventListener('click', function(){ if(typeof openUpgradeFlow === 'function') openUpgradeFlow(); });
+  }
+}
+
+function applyPremiumGate(p){
+  var banner = document.getElementById('analysisUpsellBanner');
+  if(banner) banner.style.display = p.is_premium ? 'none' : 'flex';
+  if(p.is_premium){
+    var section = document.getElementById('becomeClientSection');
+    if(section) section.style.display = 'none';
+  }
+  var mapTab = document.querySelector('.tab-btn[data-tab="map"]');
+  if(mapTab) mapTab.style.display = p.is_premium ? '' : 'none';
+  if(!p.is_premium && document.querySelector('.tab-btn[data-tab="map"].active')){
+    var profileTab = document.querySelector('.tab-btn[data-tab="profile"]');
+    if(profileTab) profileTab.click();
+  }
+}
+
+function renderProfileUI(p){
+  currentProfile = p;
+  document.getElementById('pName').textContent = p.name || 'there';
+  var greetingNameEl = document.getElementById('greetingName');
+  if(greetingNameEl) greetingNameEl.textContent = p.name ? p.name.split(' ')[0] : 'there';
+  var metaParts = (p.age ? p.age + ' \u00b7 ' : '') + (p.city ? p.city + ' \u00b7 ' : '') + (p.occupation || '');
+  document.getElementById('pMeta').textContent = metaParts.trim() || 'Add your age, location, and occupation in Edit profile.';
+  document.getElementById('pAboutTitle').textContent = 'About ' + (p.name ? p.name.split(' ')[0] : 'you');
+  document.getElementById('pDiagnosed').textContent = p.diagnosed_label || '\u2014';
+  document.getElementById('pReferral').textContent = p.referral_path || '\u2014';
+  document.getElementById('pCycle').textContent = p.cycle_length_days + ' days';
+  document.getElementById('pTreatment').textContent = p.treatment || '\u2014';
+  document.getElementById('pCheckup').textContent = p.checkup_frequency || '\u2014';
+  document.getElementById('pGoal').textContent = p.primary_goal || '\u2014';
+  document.getElementById('qsEntries').textContent = p.journal_entries_logged;
+  document.getElementById('qsAdherence').textContent = p.medication_adherence_pct + '%';
+  var initials = p.name ? p.name.split(' ').map(function(w){ return w[0]; }).join('').slice(0,2) : 'EV';
+  document.querySelector('.avatar').textContent = initials || 'EV';
+  var careTeamEmptyMsg = p.is_premium
+    ? 'Your care team at ' + (p.clinic_name || 'your clinic') + ' hasn\u2019t been added yet.'
+    : 'Become a client at a partner clinic to see your care team here.';
+  document.getElementById('careTeamList').innerHTML = (p.care_team || []).map(function(m){
+    var i = m.name.split(' ').filter(function(w){ return w[0]===w[0].toUpperCase(); }).map(function(w){return w[0];}).join('').slice(0,2);
+    return '<div class="care-team-row"><div class="ct-avatar">'+i+'</div><div><div class="ct-name">'+m.name+'</div><div class="ct-role">'+m.role+'</div></div></div>';
+  }).join('') || '<div style="font-size:12.5px;color:var(--muted);">'+careTeamEmptyMsg+'</div>';
+
+  renderSidebarFooter(p);
+  applyPremiumGate(p);
+}
+
+safe('profile-data', function(){
+  fetch('/api/profile').then(function(r){ return r.json(); }).then(function(p){
+    renderProfileUI(p);
+    if(typeof showOnboarding === 'function') showOnboarding();
+  }).catch(function(err){ console.error('profile load failed', err); });
+});
+
+/* ---------------- Profile actions ---------------- */
+safe('profile-actions', function(){
+  document.getElementById('editProfileBtn').addEventListener('click', function(){
+    if(!currentProfile) return;
+    openModal(
+      '<h3>Edit profile</h3>' +
+      '<label>Primary goal</label>' +
+      '<input type="text" id="editGoal" value="'+currentProfile.primary_goal+'">' +
+      '<label>Average cycle length (days)</label>' +
+      '<input type="text" id="editCycle" value="'+currentProfile.cycle_length_days+'">' +
+      '<button class="btn btn-primary" id="saveProfileBtn" style="width:100%;justify-content:center;margin-top:16px;">Save changes</button>'
+    );
+    document.getElementById('saveProfileBtn').addEventListener('click', function(){
+      var goal = document.getElementById('editGoal').value.trim();
+      var cycle = parseInt(document.getElementById('editCycle').value.trim(), 10) || currentProfile.cycle_length_days;
+      fetch('/api/profile', {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({primary_goal: goal, cycle_length_days: cycle})
+      }).then(function(r){ return r.json(); }).then(function(p){
+        currentProfile = p;
+        document.getElementById('pGoal').textContent = p.primary_goal;
+        document.getElementById('pCycle').textContent = p.cycle_length_days + ' days';
+        closeModal();
+      }).catch(function(err){ console.error('save profile failed', err); closeModal(); });
+    });
+  });
+
+  document.getElementById('messageCareBtn').addEventListener('click', openCareTeamModal);
+});
+
+/* ---------------- Reusable: Message care team (used by Profile button + global quick-action) ---------------- */
+function openCareTeamModal(){
+  var teamOptions = (currentProfile && currentProfile.care_team ? currentProfile.care_team : [])
+    .map(function(m){ return '<option value="'+m.name+'">'+m.name+' \u00b7 '+m.role+'</option>'; }).join('');
+  openModal(
+    '<h3>Message care team</h3>' +
+    '<label>To</label>' +
+    '<select id="careMsgTo" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:Manrope,sans-serif;font-size:13.5px;background:var(--wash);">' + teamOptions + '</select>' +
+    '<label>Message</label>' +
+    '<textarea id="careMsgBody" placeholder="What would you like your care team to know?"></textarea>' +
+    '<button class="btn btn-primary" id="careMsgSend" style="width:100%;justify-content:center;margin-top:16px;">Send message</button>'
+  );
+  document.getElementById('careMsgSend').addEventListener('click', function(){
+    var body = document.getElementById('careMsgBody').value.trim();
+    if(!body) return;
+    var to = document.getElementById('careMsgTo').value;
+    openModal('<h3>Message sent</h3><p style="font-size:13.5px;color:var(--muted);">Sent to '+to+'. Your care team usually replies within one business day.</p>');
+  });
+}
+
+/* ---------------- Onboarding / Freemium-Premium flow ---------------- */
+var onboardState = { name:'', email:'', selectedClinicId:null, selectedClinicName:null, isUpgradeOnly:false };
+
+function showOnboarding(){
+  var overlay = document.getElementById('onboardOverlay');
+  overlay.classList.add('show');
+  goToOnboardStep(1);
+}
+function hideOnboarding(){
+  document.getElementById('onboardOverlay').classList.remove('show');
+}
+function goToOnboardStep(n){
+  document.querySelectorAll('.onboard-step').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('onboardStep'+n).classList.add('active');
+  document.querySelectorAll('.onboard-progress .dot').forEach(function(dot){
+    var step = parseInt(dot.dataset.step, 10);
+    dot.classList.toggle('current', step === n);
+    dot.classList.toggle('done', step < n);
+  });
+}
+
+function openUpgradeFlow(){
+  onboardState.isUpgradeOnly = true;
+  document.getElementById('onboardOverlay').classList.add('show');
+  loadOnboardClinics();
+  goToOnboardStep(3);
+}
+
+var onboardClinicsLoaded = false;
+function loadOnboardClinics(){
+  if(onboardClinicsLoaded) return;
+  fetch('/api/clinics').then(function(r){ return r.json(); }).then(function(clinics){
+    onboardClinicsLoaded = true;
+    var list = document.getElementById('onbClinicList');
+    function render(filterText){
+      var q = (filterText || '').toLowerCase();
+      var filtered = clinics.filter(function(c){
+        return !q || c.name.toLowerCase().indexOf(q) > -1 || c.area.toLowerCase().indexOf(q) > -1;
+      });
+      list.innerHTML = filtered.map(function(c){
+        return '<div class="onboard-clinic-card" data-id="'+c.id+'" data-name="'+c.name.replace(/"/g,'&quot;')+'">' +
+          '<div class="cc-icon">'+(c.icon || '🏥')+'</div>' +
+          '<div style="flex:1;min-width:0;"><div class="cn">'+c.name+'</div><div class="ca">'+c.area+'</div></div></div>';
+      }).join('') || '<div style="font-size:12.5px;color:var(--muted);padding:8px;">No clinics match that search.</div>';
+      list.querySelectorAll('.onboard-clinic-card').forEach(function(card){
+        card.addEventListener('click', function(){
+          list.querySelectorAll('.onboard-clinic-card').forEach(function(c){ c.classList.remove('selected'); });
+          card.classList.add('selected');
+          onboardState.selectedClinicId = parseInt(card.dataset.id, 10);
+          onboardState.selectedClinicName = card.dataset.name;
+          document.getElementById('onbConfirmClinic').disabled = false;
+        });
+      });
+    }
+    render('');
+    document.getElementById('onbClinicSearch').addEventListener('input', function(e){ render(e.target.value); });
+  }).catch(function(err){ console.error('onboard clinics load failed', err); });
+}
+
+function submitOnboard(isPremium, clinicId){
+  var payload = { name: onboardState.name, email: onboardState.email, is_premium: isPremium, clinic_id: clinicId };
+  fetch('/api/onboard', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+  }).then(function(r){ return r.json(); }).then(function(p){
+    renderProfileUI(p);
+    hideOnboarding();
+    if(typeof closeModal === 'function') closeModal();
+    onboardState.isUpgradeOnly = false;
+  }).catch(function(err){ console.error('onboard submit failed', err); hideOnboarding(); });
+}
+
+safe('onboarding', function(){
+  var nameInput = document.getElementById('onbName');
+  var emailInput = document.getElementById('onbEmail');
+  var continueBtn = document.getElementById('onbContinue1');
+
+  function validateStep1(){
+    var okName = nameInput.value.trim().length > 0;
+    var okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
+    continueBtn.disabled = !(okName && okEmail);
+  }
+  nameInput.addEventListener('input', validateStep1);
+  emailInput.addEventListener('input', validateStep1);
+  continueBtn.addEventListener('click', function(){
+    onboardState.name = nameInput.value.trim();
+    onboardState.email = emailInput.value.trim();
+    goToOnboardStep(2);
+  });
+
+  document.getElementById('onbFreemium').addEventListener('click', function(){
+    submitOnboard(false, null);
+  });
+  document.getElementById('onbPremiumPath').addEventListener('click', function(){
+    loadOnboardClinics();
+    goToOnboardStep(3);
+  });
+  document.getElementById('onbBack3').addEventListener('click', function(){
+    if(onboardState.isUpgradeOnly){ hideOnboarding(); onboardState.isUpgradeOnly = false; }
+    else { goToOnboardStep(2); }
+  });
+  document.getElementById('onbConfirmClinic').addEventListener('click', function(){
+    submitOnboard(true, onboardState.selectedClinicId);
+  });
+
+});
+
+/* ---------------- Become a client (embedded in Analysis for freemium) ---------------- */
+safe('become-client', function(){
+  var browseBtn = document.getElementById('browseClinicsBtn');
+  if(!browseBtn) return;
+  var section = document.getElementById('becomeClientSection');
+  var listEl = document.getElementById('becomeClientList');
+  var loaded = false;
+  var clinicsCache = [];
+
+  function renderList(filterText){
+    var q = (filterText || '').toLowerCase();
+    var filtered = clinicsCache.filter(function(c){
+      return !q || c.name.toLowerCase().indexOf(q) > -1 || c.area.toLowerCase().indexOf(q) > -1;
+    });
+    listEl.innerHTML = filtered.map(function(c){
+      return '<div class="onboard-clinic-card" data-id="'+c.id+'">' +
+        '<div class="cc-icon">'+(c.icon || '🏥')+'</div>' +
+        '<div style="flex:1;min-width:0;"><div class="cn">'+c.name+'</div><div class="ca">'+c.area+'</div></div></div>';
+    }).join('') || '<div style="font-size:12.5px;color:var(--muted);padding:8px;">No clinics match that search.</div>';
+    listEl.querySelectorAll('.onboard-clinic-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        var c = clinicsCache.find(function(x){ return x.id === parseInt(card.dataset.id, 10); });
+        if(c) showClinicDetail(c);
+      });
+    });
+  }
+
+  function showClinicDetail(c){
+    var tagsHtml = (c.tags || []).map(function(t){ return '<span>'+t+'</span>'; }).join('');
+    openModal(
+      '<h3>'+c.name+'</h3>' +
+      '<div class="eyebrow" style="display:block;margin:6px 0 14px;">'+c.area+'</div>' +
+      '<div class="cm" style="margin-bottom:16px;">'+tagsHtml+'</div>' +
+      '<p style="font-size:13.5px;line-height:1.6;color:var(--ink);margin-bottom:20px;">Become a client at '+c.name+' to unlock your own AI-assisted analysis \u2014 an ultrasound/MRI/exam history reviewed session by session, plus a doctor-reviewed AI double-check, instead of the generated example.</p>' +
+      '<button class="btn btn-primary" id="becomeClientConfirm" style="width:100%;justify-content:center;">Become a client at '+c.name+'</button>'
+    );
+    document.getElementById('becomeClientConfirm').addEventListener('click', function(){
+      if(!currentProfile || !currentProfile.name){
+        closeModal();
+        showOnboarding();
+        return;
+      }
+      onboardState.name = currentProfile.name;
+      onboardState.email = currentProfile.email || '';
+      submitOnboard(true, c.id);
+    });
+  }
+
+  browseBtn.addEventListener('click', function(){
+    var showing = section.style.display !== 'none';
+    section.style.display = showing ? 'none' : 'block';
+    if(!showing){
+      section.scrollIntoView({behavior:'smooth', block:'start'});
+      if(!loaded){
+        loaded = true;
+        fetch('/api/clinics').then(function(r){ return r.json(); }).then(function(clinics){
+          clinicsCache = clinics;
+          renderList('');
+        }).catch(function(err){ console.error('become-client clinics load failed', err); });
+      }
+    }
+  });
+
+  document.getElementById('becomeClientSearch').addEventListener('input', function(e){ renderList(e.target.value); });
+});
+
+/* ---------------- Tab switching ---------------- */
+safe('tabs', function(){
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  var sections = document.querySelectorAll('.section');
+  var sidebar = document.getElementById('sidebar');
+  var backdrop = document.getElementById('drawerBackdrop');
+
+  function closeDrawer(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+  }
+  function openDrawer(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+  }
+  var hamburgerBtn = document.getElementById('hamburgerBtn');
+  var drawerClose = document.getElementById('drawerClose');
+  if(hamburgerBtn) hamburgerBtn.addEventListener('click', openDrawer);
+  if(drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if(backdrop) backdrop.addEventListener('click', closeDrawer);
+
+  tabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabBtns.forEach(function(b){ b.classList.remove('active'); });
+      sections.forEach(function(s){ s.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+      if(btn.dataset.tab === 'map' && window._map){ setTimeout(function(){ window._map.invalidateSize(); }, 80); }
+      closeDrawer();
+    });
+  });
+});
+
+/* ---------------- Analysis ---------------- */
+safe('analysis', function(){
+  var sessions = [];
+  var phaseNames = {pre:'Pre-menstrual', during:'Menstrual', inter:'Intermenstrual', post:'Post-menstrual'};
+  var examNames = {tvus:'Transvaginal ultrasound', mri:'Pelvic MRI', gyn:'Gynecological exam'};
+  var resultsCache = {};   // key: month+'|'+exam -> [{metric, value}]
+  var feedbackCache = {};  // key: month -> {doctor_note, ai_note}
+
+  var activePhase = 'all', activeExam = 'all';
+  var activeMonths = {};
+  var detailMonth = 'Jun';
+  var trendChart, readoutChart;
+
+  function fetchResults(month, exam){
+    var key = month+'|'+exam;
+    if(resultsCache[key]) return Promise.resolve(resultsCache[key]);
+    return fetch('/api/sessions/'+month+'/results?exam_type='+exam).then(function(r){ return r.json(); }).then(function(data){
+      resultsCache[key] = data;
+      return data;
+    });
+  }
+  function fetchFeedback(month){
+    if(feedbackCache[month]) return Promise.resolve(feedbackCache[month]);
+    return fetch('/api/sessions/'+month+'/feedback').then(function(r){ return r.json(); }).then(function(data){
+      feedbackCache[month] = data;
+      return data;
+    });
+  }
+
+  function filteredSessions(){
+    return sessions.filter(function(s){
+      return (activePhase==='all' || s.phase===activePhase) &&
+             (activeExam==='all' || s.primary_exam===activeExam) &&
+             activeMonths[s.month];
+    });
+  }
+
+  function renderTrend(){
+    var data = filteredSessions();
+    var labels = data.map(function(s){ return s.month+' · '+phaseNames[s.phase]; });
+    if(trendChart) trendChart.destroy();
+    var ctx = document.getElementById('trendChart');
+    trendChart = new Chart(ctx, {
+      type:'line',
+      data:{ labels:labels, datasets:[
+        {label:'Reported pain (0–10)', data:data.map(function(s){return s.pain;}), borderColor:'#C97B62', backgroundColor:'#C97B62', tension:.35, pointRadius:5},
+        {label:'Lesion size (mm)', data:data.map(function(s){return s.lesion_mm;}), borderColor:'#7E4FC0', backgroundColor:'#7E4FC0', tension:.35, pointRadius:5},
+        {label:'Ovarian mobility score', data:data.map(function(s){return s.mobility_score;}), borderColor:'#E79CB0', backgroundColor:'#E79CB0', tension:.35, pointRadius:5, borderDash:[4,3]},
+      ]},
+      options:{
+        responsive:true,
+        onHover:function(evt, els){ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+        onClick:function(evt, els){
+          if(!els.length) return;
+          var idx = els[0].index;
+          var month = data[idx].month;
+          renderReadout(month);
+          document.getElementById('readoutTabs').scrollIntoView({behavior:'smooth', block:'center'});
+        },
+        plugins:{legend:{position:'bottom', labels:{usePointStyle:true, boxWidth:8, font:{family:'Manrope', size:11}}}},
+        scales:{
+          x:{grid:{display:false}, ticks:{font:{family:'Manrope', size:10}}},
+          y:{grid:{color:'#ECE9EE'}, ticks:{font:{family:'Manrope', size:10}}}
+        }
+      }
+    });
+
+    var strip = document.getElementById('galleryStrip');
+    strip.innerHTML='';
+    var monthImg = {Jan:'assets/exams/ultrasound-jan.png', Feb:'assets/exams/ultrasound-feb.png', Mar:'assets/exams/ultrasound-mar.png',
+                     Apr:'assets/exams/ultrasound-apr.png', May:'assets/exams/ultrasound-may.png', Jun:'assets/exams/ultrasound-jun.png'};
+    data.forEach(function(s){
+      var item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.style.cursor = 'pointer';
+      item.innerHTML = '<div class="gallery-thumb"><img src="'+monthImg[s.month]+'" alt="Generated example frame" loading="lazy"></div>' +
+        '<div class="gallery-date">'+s.date_label+'</div>' +
+        '<div class="gallery-phase">'+phaseNames[s.phase]+' · '+s.primary_exam.toUpperCase()+'</div>';
+      item.addEventListener('click', function(){
+        openModal(
+          '<h3>'+s.date_label+' session</h3>' +
+          '<div class="eyebrow" style="display:block;margin-bottom:10px;">'+examNames[s.primary_exam]+' · '+phaseNames[s.phase]+' phase</div>' +
+          '<img src="'+monthImg[s.month]+'" alt="Generated example frame" style="width:100%;border-radius:12px;margin-bottom:14px;display:block;">' +
+          '<p style="font-size:13.5px;line-height:1.65;color:var(--ink);">A generated stand-in for the linked image sequence from this session \u2014 in the finished product, this opens the actual ultrasound frames and cine loops tagged to '+s.date_label+', synced to your reported pain and cycle phase that day.</p>' +
+          '<div style="margin-top:14px;padding:14px;background:var(--wash);border-radius:10px;font-size:12.5px;color:var(--muted);">Reported pain that day: <strong style="color:var(--ink);">'+s.pain+'/10</strong> &nbsp;·&nbsp; Lesion size: <strong style="color:var(--ink);">'+s.lesion_mm+' mm</strong></div>'
+        );
+      });
+      strip.appendChild(item);
+    });
+    document.getElementById('galleryCount').textContent = data.length + ' session' + (data.length!==1?'s':'') + ' on file';
+  }
+
+  function renderReadout(month){
+    detailMonth = month;
+    var s = sessions.find(function(x){ return x.month===month; });
+    var exam = (activeExam !== 'all') ? activeExam : s.primary_exam;
+    document.getElementById('readoutMeta').textContent = s.month+' · '+examNames[exam]+' · '+phaseNames[s.phase]+' phase';
+    document.querySelectorAll('.readout-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.month===month); });
+    document.getElementById('fbMonthLabel').textContent = month;
+
+    var canvas = document.getElementById('readoutChart');
+    var gaugeRow = document.getElementById('gaugeRow');
+    var drill = document.getElementById('readoutDrill');
+    drill.style.display = 'none'; drill.innerHTML = '';
+    if(readoutChart){ readoutChart.destroy(); readoutChart = null; }
+
+    function showDrill(regionName, value){
+      var trend = value >= 3 ? 'higher than' : 'in line with';
+      drill.innerHTML = '<strong>'+regionName+':</strong> scored '+value.toFixed(1)+'/5 in the '+month+' session (generated) \u2014 '+trend+' the typical range seen so far. Click another region to compare.';
+      drill.style.display = '';
+    }
+
+    fetchFeedback(month).then(function(fb){
+      document.getElementById('fbDoctorNote').textContent = fb.doctor_note;
+      document.getElementById('fbAiNote').textContent = fb.ai_note;
+    }).catch(function(){
+      document.getElementById('fbDoctorNote').textContent = 'Feedback unavailable.';
+      document.getElementById('fbAiNote').textContent = 'Feedback unavailable.';
+    });
+
+    fetchResults(month, exam).then(function(results){
+      var labels = results.map(function(r){ return r.metric; });
+      var values = results.map(function(r){ return r.value; });
+
+      if(exam === 'tvus'){
+        canvas.style.display=''; gaugeRow.style.display='none';
+        readoutChart = new Chart(canvas, {
+          type:'bar',
+          data:{ labels:labels, datasets:[{label:'Region involvement score (0–5, generated)', data:values, backgroundColor:'#7E4FC0'}] },
+          options:{ indexAxis:'y', responsive:true,
+            onHover:function(evt, els){ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick:function(evt, els){ if(!els.length) return; var i=els[0].index; showDrill(labels[i], values[i]); },
+            plugins:{legend:{display:false}},
+            scales:{ x:{min:0, max:5, grid:{color:'#ECE9EE'}}, y:{grid:{display:false}} } }
+        });
+      } else if(exam === 'mri'){
+        canvas.style.display=''; gaugeRow.style.display='none';
+        readoutChart = new Chart(canvas, {
+          type:'radar',
+          data:{ labels:labels, datasets:[{label:'Signal intensity by region (generated)', data:values, borderColor:'#C46A86', backgroundColor:'rgba(196,106,134,0.25)', pointBackgroundColor:'#C46A86'}] },
+          options:{ responsive:true,
+            onHover:function(evt, els){ evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick:function(evt, els){ if(!els.length) return; var i=els[0].index; showDrill(labels[i], values[i]); },
+            scales:{ r:{min:0, max:5, grid:{color:'#ECE9EE'}, angleLines:{color:'#ECE9EE'}} }, plugins:{legend:{display:false}} }
+        });
+      } else {
+        canvas.style.display='none'; gaugeRow.style.display='';
+        gaugeRow.innerHTML = labels.map(function(name, i){
+          var v = values[i];
+          var pct = Math.round((v/5)*100);
+          return '<div class="gauge" data-i="'+i+'" style="cursor:pointer;"><div class="gname">'+name+'</div>' +
+            '<div class="gbar"><div class="gfill" style="width:'+pct+'%;"></div></div>' +
+            '<div class="gval">'+v.toFixed(1)+'<span style="font-size:11px;color:var(--muted);">/5</span></div></div>';
+        }).join('');
+        gaugeRow.querySelectorAll('.gauge').forEach(function(g){
+          var i = +g.dataset.i;
+          g.addEventListener('click', function(){ showDrill(labels[i], values[i]); });
+        });
+      }
+    }).catch(function(err){ console.error('results fetch failed', err); });
+  }
+
+  fetch('/api/sessions').then(function(r){ return r.json(); }).then(function(data){
+    sessions = data;
+    sessions.forEach(function(s){ activeMonths[s.month] = true; });
+
+    var monthScrub = document.getElementById('monthScrub');
+    sessions.forEach(function(s){
+      var d = document.createElement('div');
+      d.className = 'month-dot active';
+      d.dataset.month = s.month;
+      d.innerHTML = s.month + '<span class="d">'+s.date_label.split(' ')[1]+'</span>';
+      d.addEventListener('click', function(){
+        var activeKeys = Object.keys(activeMonths).filter(function(k){ return activeMonths[k]; });
+        var onlyThisActive = activeKeys.length === 1 && activeKeys[0] === s.month;
+        if(onlyThisActive){
+          sessions.forEach(function(x){ activeMonths[x.month] = true; });
+        } else {
+          sessions.forEach(function(x){ activeMonths[x.month] = (x.month === s.month); });
+        }
+        document.querySelectorAll('.month-dot').forEach(function(dot){
+          dot.classList.toggle('active', activeMonths[dot.dataset.month]);
+        });
+        renderTrend();
+      });
+      monthScrub.appendChild(d);
+    });
+
+    var readoutTabs = document.getElementById('readoutTabs');
+    sessions.forEach(function(s){
+      var t = document.createElement('button');
+      t.className = 'readout-tab' + (s.month===detailMonth ? ' active' : '');
+      t.dataset.month = s.month;
+      t.textContent = s.month;
+      t.addEventListener('click', function(){ renderReadout(s.month); });
+      readoutTabs.appendChild(t);
+    });
+
+    renderTrend();
+    renderReadout(detailMonth);
+  }).catch(function(err){
+    console.error('sessions fetch failed', err);
+    document.getElementById('trendChart').replaceWith(
+      Object.assign(document.createElement('div'), {
+        style: 'padding:24px;text-align:center;color:var(--muted);font-size:13px;',
+        textContent: 'Could not load analysis data. Make sure the server (python main.py) is running and reload this page.'
+      })
+    );
+  });
+
+  document.querySelectorAll('.petal').forEach(function(p){
+    p.addEventListener('click', function(){
+      var ph = p.dataset.phase;
+      activePhase = (activePhase === ph) ? 'all' : ph;
+      updatePetals(); renderTrend();
+    });
+  });
+  document.getElementById('phaseCenter').addEventListener('click', function(){
+    activePhase = 'all';
+    updatePetals(); renderTrend();
+  });
+  function updatePetals(){
+    document.querySelectorAll('.petal').forEach(function(p){
+      p.classList.toggle('dim', activePhase!=='all' && p.dataset.phase!==activePhase);
+    });
+    document.getElementById('phaseLabel').textContent = activePhase==='all' ? 'All phases' : phaseNames[activePhase];
+    document.getElementById('phaseCaption').textContent = activePhase==='all' ? 'Tap a petal to isolate one phase' : 'Showing this phase only \u2014 tap the center to reset';
+  }
+
+  document.getElementById('examChips').addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if(!chip) return;
+    document.querySelectorAll('#examChips .chip').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    activeExam = chip.dataset.exam;
+    renderTrend();
+    if(sessions.length) renderReadout(detailMonth);
+  });
+
+  document.getElementById('resetFilters').addEventListener('click', function(){
+    activePhase='all'; activeExam='all';
+    sessions.forEach(function(s){ activeMonths[s.month]=true; });
+    updatePetals();
+    document.querySelectorAll('#examChips .chip').forEach(function(c){ c.classList.toggle('active', c.dataset.exam==='all'); });
+    document.querySelectorAll('.month-dot').forEach(function(d){ d.classList.add('active'); });
+    renderTrend();
+    if(sessions.length) renderReadout(detailMonth);
+  });
+
+  document.getElementById('askAiAnalysisBtn').addEventListener('click', function(){
+    var s = sessions.find(function(x){ return x.month===detailMonth; }) || sessions[sessions.length-1];
+    var trend = sessions.length >= 2
+      ? (sessions[sessions.length-1].pain < sessions[0].pain ? 'trending down overall since January' : 'holding fairly steady since January')
+      : 'still building up a baseline';
+    var summary = s
+      ? "Here's a quick read of your Analysis tab: you're looking at "+s.month+" (\u200b"+s.date_label+"), "+phaseNames[s.phase]+" phase, "+examNames[s.primary_exam]+". Reported pain across your sessions is "+trend+". Ask me about a specific month, exam type, or what a pattern might mean."
+      : "Here's your Analysis tab \u2014 ask me about a specific month, exam type, or what a pattern in your chart might mean.";
+    openAiChat('Analysis \u00b7 '+detailMonth, summary);
+  });
+
+  updatePetals();
+});
+
+/* ---------------- Journal calendar ---------------- */
+safe('journal', function(){
+  var YEAR = 2026, MONTH0 = 6; // starts on July 2026
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var entriesByDay = {}; // day number -> entry
+  var lastLoadedEntries = [];
+
+  function recomputeEntriesForMonth(){
+    entriesByDay = {};
+    lastLoadedEntries.forEach(function(e){
+      var d = new Date(e.entry_date+'T00:00:00');
+      if(d.getFullYear()===YEAR && d.getMonth()===MONTH0){ entriesByDay[d.getDate()] = e; }
+    });
+  }
+
+  function buildCalendar(){
+    document.getElementById('calTitle').textContent = MONTH_NAMES[MONTH0] + ' ' + YEAR;
+    var table = document.getElementById('calTable');
+    table.innerHTML = '';
+    var dows = ['S','M','T','W','T','F','S'];
+    var thead = '<tr>' + dows.map(function(d){ return '<th>'+d+'</th>'; }).join('') + '</tr>';
+
+    var firstDow = new Date(YEAR, MONTH0, 1).getDay();
+    var daysInMonth = new Date(YEAR, MONTH0+1, 0).getDate();
+    var today = new Date();
+    var isCurrentMonth = (YEAR === today.getFullYear() && MONTH0 === today.getMonth());
+
+    var rows = '';
+    var day = 1;
+    var totalCells = firstDow + daysInMonth;
+    var totalRows = Math.ceil(totalCells / 7);
+    for(var r=0; r<totalRows; r++){
+      rows += '<tr>';
+      for(var c=0; c<7; c++){
+        var cellIndex = r*7 + c;
+        if(cellIndex < firstDow || day > daysInMonth){
+          rows += '<td><div class="cal-day blank"></div></td>';
+        } else {
+          var e = entriesByDay[day];
+          var dots = '';
+          if(e){
+            if(e.on_period) dots += '<span class="dot dot-period"></span>';
+            if(e.meds.some(function(m){ return m.taken; })) dots += '<span class="dot dot-med"></span>';
+            if(e.pain_level >= 6) dots += '<span class="dot dot-pain"></span>';
+          }
+          var sel = (isCurrentMonth && day === today.getDate()) ? ' selected' : '';
+          rows += '<td><div class="cal-day'+sel+'" data-day="'+day+'">'+day+
+                  '<div class="dots">'+dots+'</div></div></td>';
+          day++;
+        }
+      }
+      rows += '</tr>';
+    }
+    table.innerHTML = thead + rows;
+
+    table.querySelectorAll('.cal-day:not(.blank)').forEach(function(cell){
+      cell.addEventListener('click', function(){
+        table.querySelectorAll('.cal-day').forEach(function(c){ c.classList.remove('selected'); });
+        cell.classList.add('selected');
+        document.getElementById('entryDate').textContent = MONTH_NAMES[MONTH0] + ' ' + cell.dataset.day + ', ' + YEAR;
+      });
+    });
+  }
+
+  document.getElementById('calPrev').addEventListener('click', function(){
+    MONTH0--;
+    if(MONTH0 < 0){ MONTH0 = 11; YEAR--; }
+    recomputeEntriesForMonth();
+    buildCalendar();
+  });
+  document.getElementById('calNext').addEventListener('click', function(){
+    MONTH0++;
+    if(MONTH0 > 11){ MONTH0 = 0; YEAR++; }
+    recomputeEntriesForMonth();
+    buildCalendar();
+  });
+
+  function renderFeed(entries){
+    var feedList = document.getElementById('feedList');
+    feedList.innerHTML = entries.slice(0, 8).map(function(e){
+      var medsTaken = e.meds.filter(function(m){ return m.taken; }).length;
+      var label = 'Pain '+e.pain_level+'/10 · '+medsTaken+'/'+e.meds.length+' meds'+(e.flagged ? ' · flagged for review' : '');
+      var d = new Date(e.entry_date+'T00:00:00');
+      var md = (d.getMonth()+1)+'/'+d.getDate();
+      return '<div class="feed-item"><span class="fd">'+md+'</span><span class="fv">'+label+'</span></div>';
+    }).join('');
+  }
+
+  function loadJournal(){
+    return fetch('/api/journal?limit=60').then(function(r){ return r.json(); }).then(function(entries){
+      lastLoadedEntries = entries;
+      recomputeEntriesForMonth();
+      buildCalendar();
+      renderFeed(entries);
+    }).catch(function(err){ console.error('journal load failed', err); buildCalendar(); });
+  }
+
+  loadJournal();
+
+  var currentPain = 3;
+  var painScale = document.getElementById('painScale');
+  for(var p=0; p<=10; p++){
+    var pd = document.createElement('div');
+    pd.className = 'pain-dot' + (p===3 ? ' selected' : '');
+    pd.dataset.val = p;
+    pd.textContent = p;
+    pd.addEventListener('click', function(){
+      painScale.querySelectorAll('.pain-dot').forEach(function(x){ x.classList.remove('selected'); });
+      this.classList.add('selected');
+      currentPain = +this.dataset.val;
+    });
+    painScale.appendChild(pd);
+  }
+
+  document.getElementById('tagRow').addEventListener('click', function(e){
+    if(e.target.classList.contains('tag-chip')) e.target.classList.toggle('selected');
+  });
+
+  var sendBtn = document.getElementById('sendDoctorBtn');
+  sendBtn.addEventListener('click', function(){
+    var meds = Array.prototype.map.call(document.querySelectorAll('.med-item'), function(item){
+      return { name: item.querySelector('label').textContent, taken: item.querySelector('input').checked };
+    });
+    var symptoms = Array.prototype.map.call(document.querySelectorAll('.tag-chip.selected'), function(t){ return t.textContent; });
+    var note = document.getElementById('doctorNote').value;
+    var today = new Date().toISOString().slice(0,10);
+
+    sendBtn.disabled = true;
+    fetch('/api/journal', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ entry_date: today, pain_level: currentPain, meds: meds, symptoms: symptoms, on_period: false, note: note })
+    }).then(function(r){ return r.json(); }).then(function(){
+      return loadJournal();
+    }).then(function(){
+      var originalText = 'Send to doctor';
+      sendBtn.textContent = 'Sent to Dr. M\u00e9ndez\u2019s team \u2713';
+      setTimeout(function(){ sendBtn.textContent = originalText; sendBtn.disabled = false; }, 2200);
+    }).catch(function(err){
+      console.error('send entry failed', err);
+      sendBtn.disabled = false;
+    });
+  });
+
+  document.getElementById('askAiJournalBtn').addEventListener('click', function(){
+    var recent = lastLoadedEntries.slice(0, 7);
+    var flaggedCount = recent.filter(function(e){ return e.flagged; }).length;
+    var avgPain = recent.length ? (recent.reduce(function(s,e){ return s+e.pain_level; }, 0) / recent.length).toFixed(1) : null;
+    var summary = avgPain
+      ? "Here's a quick look at your last "+recent.length+" tracking entries: average pain "+avgPain+"/10"+(flaggedCount ? ", with "+flaggedCount+" flagged for review" : ", nothing flagged")+". Ask me about a pattern, a medication, or whether something's worth telling your doctor now."
+      : "You haven't logged much yet \u2014 once you have a few entries, I can help you spot patterns worth mentioning at your next visit.";
+    openAiChat('Tracking journal', summary);
+  });
+});
+
+/* ---------------- Educational materials ---------------- */
+safe('learn', function(){
+  var container = document.getElementById('lessonGroups');
+  var gStrip = document.getElementById('glossaryStrip');
+  var gDef = document.getElementById('glossaryDef');
+  var activeTopic = 'all';
+  var expandedKey = null;
+  var lessonGroups = {}; // group_name -> [{t,d,dur,body}]
+
+  function renderLessons(query){
+    container.innerHTML = '';
+    Object.keys(lessonGroups).forEach(function(group){
+      if(activeTopic !== 'all' && activeTopic !== group) return;
+      var lessons = lessonGroups[group].filter(function(l){
+        if(!query) return true;
+        var q = query.toLowerCase();
+        return l.t.toLowerCase().indexOf(q)>-1 || l.d.toLowerCase().indexOf(q)>-1;
+      });
+      if(lessons.length === 0) return;
+      var groupEl = document.createElement('div');
+      groupEl.className = 'lesson-group';
+      var listHtml = lessons.map(function(l, i){
+        var key = group+'::'+i;
+        var isOpen = expandedKey === key;
+        return '<div class="lesson-card-wrap">' +
+          '<div class="lesson-card'+(isOpen?' open':'')+'" data-key="'+key+'" role="button" tabindex="0">' +
+            '<div class="lesson-num">'+String(i+1).padStart(2,'0')+'</div>' +
+            '<div class="lesson-body"><div class="lt">'+l.t+'</div><div class="ld">'+l.d+'</div></div>' +
+            '<div class="lesson-dur">'+l.dur+'</div>' +
+          '</div>' +
+          '<div class="lesson-expand'+(isOpen?' show':'')+'">'+l.body+'</div>' +
+        '</div>';
+      }).join('');
+      groupEl.innerHTML = '<h3>'+group+'</h3><div class="lesson-list">'+listHtml+'</div>';
+      container.appendChild(groupEl);
+    });
+    container.querySelectorAll('.lesson-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        var key = card.dataset.key;
+        expandedKey = (expandedKey === key) ? null : key;
+        renderLessons(document.getElementById('lessonSearch').value);
+      });
+    });
+  }
+
+  fetch('/api/glossary').then(function(r){ return r.json(); }).then(function(glossary){
+    glossary.forEach(function(g){
+      var chip = document.createElement('button');
+      chip.className = 'glossary-chip';
+      chip.textContent = g.term;
+      chip.addEventListener('click', function(){
+        var isOpen = chip.classList.contains('open');
+        document.querySelectorAll('.glossary-chip').forEach(function(c){ c.classList.remove('open'); });
+        if(isOpen){ gDef.classList.remove('show'); return; }
+        chip.classList.add('open');
+        gDef.innerHTML = '<strong>'+g.term+'.</strong> '+g.definition;
+        gDef.classList.add('show');
+      });
+      gStrip.appendChild(chip);
+    });
+  }).catch(function(err){ console.error('glossary load failed', err); });
+
+  fetch('/api/lessons').then(function(r){ return r.json(); }).then(function(lessons){
+    lessons.forEach(function(l){
+      if(!lessonGroups[l.group_name]) lessonGroups[l.group_name] = [];
+      lessonGroups[l.group_name].push({t:l.title, d:l.description, dur:l.duration, body:l.body});
+    });
+    renderLessons('');
+  }).catch(function(err){ console.error('lessons load failed', err); });
+
+  document.getElementById('lessonSearch').addEventListener('input', function(e){ renderLessons(e.target.value); });
+  document.getElementById('topicRow').addEventListener('click', function(e){
+    var chip = e.target.closest('.cat-chip');
+    if(!chip) return;
+    document.querySelectorAll('#topicRow .cat-chip').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    activeTopic = chip.dataset.topic;
+    renderLessons(document.getElementById('lessonSearch').value);
+  });
+});
+
+/* ---------------- Community ---------------- */
+safe('community', function(){
+  var catLabels = {new:'Newly diagnosed', pain:'Managing pain', fertility:'Fertility &amp; family planning', wins:'Success stories'};
+  var postList = document.getElementById('postList');
+  var activeCat = 'all';
+
+  function renderPosts(posts){
+    postList.innerHTML = posts.map(function(p){
+      var initial = p.author.slice(0,1);
+      return '<div class="card post-card" data-cat="'+p.category+'" data-id="'+p.id+'" style="'+(activeCat!=='all' && activeCat!==p.category ? 'display:none;' : '')+'">' +
+        '<div class="post-head"><div class="post-author"><span class="post-avatar">'+initial+'</span> '+p.author+'</div><span class="post-cat">'+(catLabels[p.category]||p.category)+'</span></div>' +
+        '<div class="post-body">'+p.body.replace(/</g,'&lt;')+'</div>' +
+        '<div class="post-foot"><span>\uD83D\uDCAC '+p.replies+' replies</span><span class="like-btn" data-id="'+p.id+'" data-count="'+p.likes+'">\uD83E\uDD0D '+p.likes+'</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function loadPosts(){
+    return fetch('/api/community').then(function(r){ return r.json(); }).then(renderPosts)
+      .catch(function(err){ console.error('community load failed', err); });
+  }
+  loadPosts();
+
+  document.getElementById('catRow').addEventListener('click', function(e){
+    var chip = e.target.closest('.cat-chip');
+    if(!chip) return;
+    document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
+    chip.classList.add('active');
+    activeCat = chip.dataset.cat;
+    document.querySelectorAll('.post-card').forEach(function(p){
+      p.style.display = (activeCat==='all' || p.dataset.cat===activeCat) ? '' : 'none';
+    });
+  });
+
+  postList.addEventListener('click', function(e){
+    var likeBtn = e.target.closest('.like-btn');
+    if(!likeBtn) return;
+    var liked = likeBtn.classList.toggle('liked');
+    var delta = liked ? 1 : -1;
+    fetch('/api/community/'+likeBtn.dataset.id+'/like?delta='+delta, {method:'POST'})
+      .then(function(r){ return r.json(); }).then(function(res){
+        likeBtn.dataset.count = res.likes;
+        likeBtn.textContent = (liked ? '\uD83D\uDC9C ' : '\uD83E\uDD0D ') + res.likes;
+      }).catch(function(err){ console.error('like failed', err); });
+  });
+
+  document.getElementById('startDiscussionBtn').addEventListener('click', function(){
+    openModal(
+      '<h3>Start a discussion</h3>' +
+      '<label>Category</label>' +
+      '<select id="newPostCat" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:Manrope,sans-serif;font-size:13.5px;background:var(--wash);">' +
+        '<option value="new">Newly diagnosed</option><option value="pain">Managing pain</option>' +
+        '<option value="fertility">Fertility &amp; family planning</option><option value="wins">Success stories</option>' +
+      '</select>' +
+      '<label>What is on your mind?</label>' +
+      '<textarea id="newPostBody" placeholder="Share what you are going through or ask the community..."></textarea>' +
+      '<button class="btn btn-primary" id="submitPostBtn" style="width:100%;justify-content:center;margin-top:16px;">Post to Community</button>'
+    );
+    document.getElementById('submitPostBtn').addEventListener('click', function(){
+      var body = document.getElementById('newPostBody').value.trim();
+      if(!body) return;
+      var catKey = document.getElementById('newPostCat').value;
+      fetch('/api/community', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({author:'You · Brooklyn', category:catKey, body:body})
+      }).then(function(r){ return r.json(); }).then(function(){
+        return loadPosts();
+      }).then(function(){ closeModal(); })
+      .catch(function(err){ console.error('post failed', err); closeModal(); });
+    });
+  });
+});
+
+/* ---------------- Map: Buenos Aires ---------------- */
+safe('map', function(){
+  var clinics = [];
+  var clinicList = document.getElementById('clinicList');
+  var markers = [];
+  var map;
+  var activeCity = 'nyc';
+  var baClinicsReal = [];
+
+  var CITIES = {
+    ba:      {label:'Buenos Aires', center:[-34.6050,-58.4000], zoom:12.3, real:true},
+    nyc:     {label:'New York',     center:[40.7484,-73.9857],  zoom:11.3, real:false,
+              neighborhoods:['Upper East Side','Chelsea','Tribeca','Park Slope','Astoria','Midtown']},
+    boston:  {label:'Boston',       center:[42.3601,-71.0589],  zoom:12.4, real:false,
+              neighborhoods:['Back Bay','Cambridge','Beacon Hill','Jamaica Plain','Somerville']},
+    chicago: {label:'Chicago',      center:[41.8781,-87.6298],  zoom:11.3, real:false,
+              neighborhoods:['Lincoln Park','Hyde Park','Wicker Park','The Loop','Evanston']},
+    miami:   {label:'Miami',        center:[25.7617,-80.1918],  zoom:11.3, real:false,
+              neighborhoods:['Brickell','Coral Gables','Wynwood','Coconut Grove','Doral']},
+  };
+  var NAME_TEMPLATES = ["{n} Women's Health", "{n} OB-GYN Associates", "{n} Reproductive Medicine", "{n} Family Health Center", "{n} Gynecology Group"];
+  var TAGS_POOL = ['General gynecology','Endometriosis care','Fertility','Prenatal care','Ultrasound & imaging','Same-day appointments'];
+  var ICONS = ['🏥','⚕️','🩺','🧬','📷','💗'];
+  var GRADS = [['#7E4FC0','#5B3894'], ['#9E80D6','#7E4FC0'], ['#E79CB0','#C46A86'], ['#8FB0A8','#6F9E8C'], ['#C97B62','#E79CB0'], ['#5B3894','#9E80D6']];
+
+  function seededRand(seedStr){
+    var h = 0;
+    for(var i=0;i<seedStr.length;i++){ h = (Math.imul(31,h) + seedStr.charCodeAt(i)) | 0; }
+    return function(){ h = (Math.imul(h, 1664525) + 1013904223) | 0; return ((h >>> 0) / 4294967296); };
+  }
+
+  // Generated example clinics (fictional names) for cities beyond Buenos Aires —
+  // deterministic per city (same seed -> same result every time), 3 to 6 of them.
+  function generateClinicsForCity(cityKey){
+    var city = CITIES[cityKey];
+    var rnd = seededRand('city-'+cityKey);
+    var count = 3 + Math.floor(rnd()*4);
+    var list = [];
+    for(var i=0;i<count;i++){
+      var nb = city.neighborhoods[Math.floor(rnd()*city.neighborhoods.length)];
+      var tmpl = NAME_TEMPLATES[Math.floor(rnd()*NAME_TEMPLATES.length)];
+      var name = tmpl.replace('{n}', nb);
+      var tagsSet = {}; tagsSet[TAGS_POOL[Math.floor(rnd()*TAGS_POOL.length)]] = true; tagsSet[TAGS_POOL[Math.floor(rnd()*TAGS_POOL.length)]] = true;
+      var g = GRADS[i % GRADS.length];
+      list.push({
+        id: cityKey+'-'+i, name: name, area: nb+', '+city.label,
+        lat: city.center[0] + (rnd()-0.5)*0.09, lng: city.center[1] + (rnd()-0.5)*0.09,
+        tags: Object.keys(tagsSet), icon: ICONS[i % ICONS.length],
+        grad1: g[0], grad2: g[1], is_home: false, photo_url: null, photo_credit: null,
+      });
+    }
+    return list;
+  }
+
+  function clinicsForCity(cityKey){
+    return cityKey === 'ba' ? baClinicsReal : generateClinicsForCity(cityKey);
+  }
+
+  function iconFallbackSvg(c){
+    var g = 'g'+Math.random().toString(36).slice(2,8);
+    return '<svg viewBox="0 0 60 60" width="52" height="52">' +
+      '<defs><linearGradient id="'+g+'" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0%" stop-color="'+c.grad1+'"/><stop offset="100%" stop-color="'+c.grad2+'"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="60" height="60" rx="14" fill="url(#'+g+')"/>' +
+      '<text x="30" y="38" font-size="24" text-anchor="middle">'+c.icon+'</text>' +
+    '</svg>';
+  }
+
+  function renderCity(cityKey, skipFly){
+    activeCity = cityKey;
+    var city = CITIES[cityKey];
+    clinics = clinicsForCity(cityKey);
+
+    document.getElementById('mapCityTitle').textContent = 'in ' + city.label + '.';
+    document.getElementById('mapCitySub').textContent = city.real
+      ? "Real women's-health and gynecology centres, shown here for demonstration."
+      : "Generated example clinics for demonstration \u2014 not real institutions.";
+    document.getElementById('clinicPanelFooter').textContent = city.real
+      ? 'Photos: Wikimedia Commons, various licenses \u2014 see each card.'
+      : 'Names and locations here are generated examples, not real clinics.';
+    document.querySelectorAll('.city-chip').forEach(function(c){ c.classList.toggle('active', c.dataset.city===cityKey); });
+
+    markers.forEach(function(m){ map.removeLayer(m); });
+    markers = [];
+    clinicList.innerHTML = '';
+    document.getElementById('clinicCount').textContent = clinics.length + ' partner clinic' + (clinics.length!==1?'s':'');
+
+    clinics.forEach(function(c, i){
+      var innerImg = c.photo_url
+        ? '<img class="clinic-photo" data-idx="'+i+'" src="'+c.photo_url+'" alt="">'
+        : iconFallbackSvg(c);
+      var pinHtml = '<div class="pin-wrap'+(c.is_home?' pin-home':'')+'" style="animation-delay:'+(i*0.08)+'s;">' +
+        (c.is_home ? '<div class="pin-pulse"></div>' : '') +
+        '<div class="pin-dot">'+innerImg+'</div>' +
+      '</div>';
+      var icon = L.divIcon({html:pinHtml, className:'pin-icon', iconSize:[40,40], iconAnchor:[20,34], popupAnchor:[0,-32]});
+      var marker = L.marker([c.lat,c.lng], {icon:icon})
+        .addTo(map)
+        .bindPopup('<strong>'+c.name+'</strong><br>'+c.area);
+      marker.on('click', function(){ selectClinic(i); });
+      markers.push(marker);
+
+      var card = document.createElement('div');
+      card.className = 'clinic-card' + (i===0 ? ' active' : '');
+      card.dataset.idx = i;
+      var cardImg = c.photo_url
+        ? '<img class="clinic-photo" data-idx="'+i+'" src="'+c.photo_url+'" alt="">'
+        : iconFallbackSvg(c);
+      card.innerHTML = '<div style="display:flex;gap:12px;align-items:flex-start;">' +
+        '<div class="clinic-thumb">'+cardImg+'</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div class="cn">'+c.name+'</div>' +
+          '<div class="cd">'+c.area+'</div>' +
+          '<div class="cm">'+c.tags.map(function(t){ return '<span>'+t+'</span>'; }).join('')+'</div>' +
+          (c.photo_credit ? '<div class="clinic-credit">Photo: '+c.photo_credit+'</div>' : '') +
+        '</div>' +
+      '</div>';
+      card.addEventListener('click', function(){ selectClinic(i, true); });
+      clinicList.appendChild(card);
+    });
+
+    document.querySelectorAll('.clinic-photo').forEach(function(img){
+      img.addEventListener('error', function(){
+        var idx = +img.dataset.idx;
+        var c = clinics[idx];
+        if(c) img.outerHTML = iconFallbackSvg(c);
+      });
+    });
+
+    function selectClinic(i, fromCard){
+      document.querySelectorAll('.clinic-card').forEach(function(cc){ cc.classList.remove('active'); });
+      var card = clinicList.children[i];
+      card.classList.add('active');
+      if(!fromCard){ card.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+      map.flyTo([clinics[i].lat, clinics[i].lng], 14, {duration:0.6});
+      markers[i].openPopup();
+    }
+
+    if(!skipFly) map.flyTo(city.center, city.zoom, {duration:0.7});
+  }
+
+  function initMap(){
+    map = L.map('clinicMap', {scrollWheelZoom:false}).setView(CITIES.nyc.center, CITIES.nyc.zoom);
+    window._map = map;
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution:'&copy; OpenStreetMap &copy; CARTO', maxZoom:19
+    }).addTo(map);
+
+    renderCity('nyc', true);
+
+    document.getElementById('clinicSearch').addEventListener('input', function(e){
+      var q = e.target.value.toLowerCase();
+      Array.prototype.forEach.call(clinicList.children, function(card, i){
+        var c = clinics[i];
+        var match = !q || c.name.toLowerCase().indexOf(q)>-1 || c.area.toLowerCase().indexOf(q)>-1;
+        card.style.display = match ? '' : 'none';
+      });
+    });
+
+    document.getElementById('cityChipRow').addEventListener('click', function(e){
+      var chip = e.target.closest('.city-chip');
+      if(!chip) return;
+      document.getElementById('citySearchHint').textContent = '';
+      map.invalidateSize();
+      renderCity(chip.dataset.city);
+    });
+
+    var citySearchInput = document.getElementById('citySearchInput');
+    var hint = document.getElementById('citySearchHint');
+    function trySearchCity(){
+      var q = citySearchInput.value.trim().toLowerCase();
+      if(!q) { hint.textContent = ''; return; }
+      var match = Object.keys(CITIES).find(function(key){ return CITIES[key].label.toLowerCase().indexOf(q) > -1; });
+      if(match){
+        hint.textContent = '';
+        map.invalidateSize();
+        renderCity(match);
+        citySearchInput.value = '';
+      } else {
+        hint.textContent = 'Not available yet \u2014 try Buenos Aires, New York, Boston, Chicago, or Miami.';
+      }
+    }
+    citySearchInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') trySearchCity(); });
+  }
+
+  window.addEventListener('load', function(){
+    fetch('/api/clinics').then(function(r){ return r.json(); }).then(function(data){
+      baClinicsReal = data;
+      safe('map-init', initMap);
+    }).catch(function(err){
+      console.error('clinics load failed', err);
+      document.getElementById('clinicMap').innerHTML =
+        '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">Could not load the map. Make sure the server (python main.py) is running and reload this page.</div>';
+    });
+  });
+});
+
+/* ---------------- Quick actions FAB: the 2 most frequent workflows ----------------
+   1) Logging today's symptoms/meds (happens daily) — jump straight to the
+      journal tab and focus the pain scale, no hunting through menus.
+   2) Messaging the care team when something feels off (the whole point of
+      real-time flagging vs. waiting for the next visit) — available from
+      any screen, not just buried in Profile. */
+safe('fab', function(){
+  var fabWrap = document.getElementById('fabWrap');
+  var fabMain = document.getElementById('fabMain');
+  fabMain.addEventListener('click', function(){ fabWrap.classList.toggle('open'); });
+
+  document.addEventListener('click', function(e){
+    if(fabWrap.classList.contains('open') && !fabWrap.contains(e.target)){
+      fabWrap.classList.remove('open');
+    }
+  });
+
+  document.getElementById('fabMessageCare').addEventListener('click', function(){
+    fabWrap.classList.remove('open');
+    if(typeof openCareTeamModal === 'function') openCareTeamModal();
+  });
+
+  document.getElementById('fabLogToday').addEventListener('click', function(){
+    fabWrap.classList.remove('open');
+    var journalTabBtn = document.querySelector('.tab-btn[data-tab="journal"]');
+    if(journalTabBtn) journalTabBtn.click();
+    setTimeout(function(){
+      var painScale = document.getElementById('painScale');
+      if(painScale){ painScale.scrollIntoView({behavior:'smooth', block:'center'}); }
+    }, 150);
+  });
+});
+</script>
+</body>
+</html>
